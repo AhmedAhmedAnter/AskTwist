@@ -11,28 +11,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-gradient-start: #020617;
-            --bg-gradient-mid1: #1e293b;
-            --bg-gradient-mid2: #4a044e;
-            --bg-gradient-end: #1e40af;
-            --accent-color: #38bdf8;
-            --user-bubble-color: #0ea5e9;
+            --bg-gradient-start: #020617; --bg-gradient-mid1: #1e293b; --bg-gradient-mid2: #4a044e; --bg-gradient-end: #1e40af;
+            --accent-color: #38bdf8; --user-bubble-color: #0ea5e9;
         }
         body.theme-cosmic {
-            --bg-gradient-start: #1f0033;
-            --bg-gradient-mid1: #3a025d;
-            --bg-gradient-mid2: #00224d;
-            --bg-gradient-end: #000000;
-            --accent-color: #a78bfa;
-            --user-bubble-color: #8b5cf6;
+            --bg-gradient-start: #1f0033; --bg-gradient-mid1: #3a025d; --bg-gradient-mid2: #00224d; --bg-gradient-end: #000000;
+            --accent-color: #a78bfa; --user-bubble-color: #8b5cf6;
         }
         body.theme-forest {
-            --bg-gradient-start: #052e16;
-            --bg-gradient-mid1: #166534;
-            --bg-gradient-mid2: #047857;
-            --bg-gradient-end: #064e3b;
-            --accent-color: #4ade80;
-            --user-bubble-color: #22c55e;
+            --bg-gradient-start: #052e16; --bg-gradient-mid1: #166534; --bg-gradient-mid2: #047857; --bg-gradient-end: #064e3b;
+            --accent-color: #4ade80; --user-bubble-color: #22c55e;
         }
 
         body {
@@ -44,12 +32,7 @@
         }
         @keyframes auroraBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
-        .glass-pane {
-            background-color: rgba(23, 23, 31, 0.5);
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        .glass-pane { background-color: rgba(23, 23, 31, 0.5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .chat-messages::-webkit-scrollbar, .chat-list::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-track, .chat-list::-webkit-scrollbar-track { background: transparent; }
         .chat-messages::-webkit-scrollbar-thumb, .chat-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
@@ -75,6 +58,7 @@
         .reaction-btn.selected { transform: scale(1.2); filter: drop-shadow(0 0 5px var(--accent-color)); }
         .reaction-btn:disabled { filter: grayscale(80%) opacity(50%); cursor: not-allowed; }
 
+        #sidebar.collapsed { transform: translateX(100%); }
     </style>
 </head>
 <body class="bg-slate-900 text-white">
@@ -113,11 +97,18 @@
             </div>
         </div>
     </div>
+    <div id="tools-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="glass-pane rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative">
+            <button id="close-tools-modal" class="absolute top-4 left-4 action-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <h2 class="text-3xl font-bold text-center mb-6">أدوات تويست</h2>
+            <div id="tools-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
 
     <!-- Main App Container -->
     <div id="app-container" class="hidden flex h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="glass-pane w-72 flex-shrink-0 flex-col p-4 hidden md:flex">
+        <aside id="sidebar" class="glass-pane w-72 flex-shrink-0 flex-col p-4 hidden md:flex transition-transform duration-300">
             <div class="flex-grow flex flex-col min-h-0">
                 <button id="newChatBtn" class="w-full text-right bg-slate-700/50 hover:bg-slate-700 rounded-lg p-3 mb-4 transition-colors flex items-center gap-3 font-semibold">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
@@ -126,15 +117,10 @@
                 <div id="chat-list" class="flex-grow overflow-y-auto space-y-2 pr-2"></div>
                 
                 <div class="mt-4 border-t border-slate-700/50 pt-4">
-                    <h3 class="text-slate-400 font-bold mb-2 px-2">أدوات تويست</h3>
-                    <div id="tools-list" class="space-y-2">
-                        <button class="tool-btn" data-tool="dream">مترجم الأحلام</button>
-                        <button class="tool-btn" data-tool="excuse">مولّد الأعذار</button>
-                        <button class="tool-btn" data-tool="decision">صانع القرار</button>
-                        <button class="tool-btn" data-tool="poet">شاعر الذكاء الاصطناعي</button>
-                        <button class="tool-btn" data-tool="compliment">مولّد الإطراءات</button>
-                        <button class="tool-btn" data-tool="horoscope">الأبراج الملتوية</button>
-                    </div>
+                    <button id="open-tools-modal-btn" class="w-full text-right bg-slate-700/50 hover:bg-slate-700 rounded-lg p-3 transition-colors flex items-center gap-3 font-semibold">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01-.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
+                        أدوات تويست
+                    </button>
                 </div>
             </div>
             <div id="user-profile" class="border-t border-slate-700/50 pt-4 flex items-center gap-3"></div>
@@ -142,9 +128,9 @@
 
         <!-- Main Content Area -->
         <main class="flex-1 flex flex-col bg-transparent min-w-0">
-            <header class="md:hidden flex items-center justify-between p-4 border-b border-slate-700/50 glass-pane">
+            <header class="flex items-center justify-between p-4 border-b border-slate-700/50 glass-pane">
                  <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-fuchsia-500">اسأل تويست</h1>
-                 <button id="menuBtn" class="p-2">
+                 <button id="sidebar-toggle-btn" class="p-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-16 6h16" /></svg>
                  </button>
             </header>
@@ -183,10 +169,13 @@
               shareCanvas = document.getElementById('share-canvas'),
               downloadBtn = document.getElementById('download-btn'),
               closeShareModalBtn = document.getElementById('close-share-modal'),
+              toolsModal = document.getElementById('tools-modal'),
+              toolsGrid = document.getElementById('tools-grid'),
+              openToolsModalBtn = document.getElementById('open-tools-modal-btn'),
+              closeToolsModalBtn = document.getElementById('close-tools-modal'),
               appContainer = document.getElementById('app-container'),
               userProfile = document.getElementById('user-profile'),
               chatList = document.getElementById('chat-list'),
-              toolsList = document.getElementById('tools-list'),
               chatView = document.getElementById('chat-view'),
               toolsViewContainer = document.getElementById('tools-view-container'),
               userInput = document.getElementById('userInput'),
@@ -194,7 +183,7 @@
               submitBtn = document.getElementById('submitBtn'),
               chatMessages = document.getElementById('chat-messages'),
               newChatBtn = document.getElementById('newChatBtn'),
-              menuBtn = document.getElementById('menuBtn'),
+              sidebarToggleBtn = document.getElementById('sidebar-toggle-btn'),
               sidebar = document.getElementById('sidebar'),
               confettiContainer = document.getElementById('confetti-container');
 
@@ -653,87 +642,210 @@
         // --- Event Listeners ---
         chatForm.addEventListener('submit', handleSubmit);
         newChatBtn.addEventListener('click', async () => await createNewChat(true));
-        menuBtn.addEventListener('click', () => sidebar.classList.toggle('hidden'));
+        sidebarToggleBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
         closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
-        toolsList.addEventListener('click', (e) => {
-            const toolBtn = e.target.closest('.tool-btn');
-            if (toolBtn) switchView(toolBtn.dataset.tool);
+        openToolsModalBtn.addEventListener('click', () => toolsModal.classList.remove('hidden'));
+        closeToolsModalBtn.addEventListener('click', () => toolsModal.classList.add('hidden'));
+        
+        toolsGrid.addEventListener('click', (e) => {
+            const toolBtn = e.target.closest('.tool-btn-grid');
+            if (toolBtn) {
+                switchView(toolBtn.dataset.tool);
+                toolsModal.classList.add('hidden');
+            }
         });
         
         function renderToolUI(toolName) {
-            let html = '';
-            if (toolName === 'dream') {
-                html = `
-                    <div class="pop-in text-center max-w-2xl mx-auto">
-                        <h2 class="text-3xl font-bold mb-2">مترجم الأحلام</h2>
-                        <p class="text-slate-400 mb-6">أخبرني بحلمك، وسأكشف لك عن معانيه الخفية (والعبثية).</p>
-                        <textarea id="dream-input" class="w-full h-40 glass-pane rounded-xl p-4 text-lg" placeholder="رأيت في المنام أنني أطير..."></textarea>
-                        <button id="interpret-dream-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">فسّر الحلم</button>
-                        <div id="dream-result" class="mt-6 p-4 glass-pane rounded-xl min-h-[100px] hidden"></div>
-                    </div>
-                `;
-            } else if (toolName === 'excuse') {
-                html = `
-                    <div class="pop-in text-center max-w-2xl mx-auto">
-                        <h2 class="text-3xl font-bold mb-2">مولّد الأعذار</h2>
-                        <p class="text-slate-400 mb-6">لماذا تريد عذراً؟ (مثال: للتأخر عن العمل)</p>
-                        <input type="text" id="excuse-input" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="للتأخر عن العمل...">
-                        <button id="generate-excuse-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">اخترع لي عذراً</button>
-                        <div id="excuse-result" class="mt-6 p-4 glass-pane rounded-xl min-h-[100px] hidden"></div>
-                    </div>
-                `;
-            } else if (toolName === 'decision') {
-                 html = `
-                    <div class="pop-in text-center max-w-2xl mx-auto">
-                        <h2 class="text-3xl font-bold mb-2">صانع القرار</h2>
-                        <p class="text-slate-400 mb-6">أعطني خيارين، وسأختار لك الأنسب... بوجهة نظري طبعاً.</p>
-                        <div class="flex gap-4">
-                            <input type="text" id="decision-input-1" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="الخيار الأول">
-                            <input type="text" id="decision-input-2" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="الخيار الثاني">
-                        </div>
-                        <button id="make-decision-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">اختر لي يا تويست</button>
-                        <div id="decision-result" class="mt-6 p-4 glass-pane rounded-xl min-h-[100px] hidden"></div>
-                    </div>
-                `;
+            const toolData = {
+                dream: { title: "مترجم الأحلام", desc: "أخبرني بحلمك، وسأكشف لك عن معانيه الخفية (والعبثية).", placeholder: "رأيت في المنام أنني أطير...", btnText: "فسّر الحلم", inputType: "textarea" },
+                excuse: { title: "مولّد الأعذار", desc: "لماذا تريد عذراً؟ (مثال: للتأخر عن العمل)", placeholder: "للتأخر عن العمل...", btnText: "اخترع لي عذراً", inputType: "input" },
+                decision: { title: "صانع القرار", desc: "أعطني خيارين، وسأختار لك الأنسب... بوجهة نظري طبعاً.", placeholder1: "الخيار الأول", placeholder2: "الخيار الثاني", btnText: "اختر لي يا تويست", inputType: "dual-input" },
+                poet: { title: "شاعر الذكاء الاصطناعي", desc: "اطلب قصيدة عن أي موضوع، واستمتع بالنتيجة.", placeholder: "قصيدة عن حب الشاورما...", btnText: "اكتب يا تويست", inputType: "input" },
+                compliment: { title: "مولّد الإطراءات", desc: "لمن تريد توجيه هذه المجاملة الملتوية؟", placeholder: "لمديري في الشغل...", btnText: "جامل يا تويست", inputType: "input" },
+                horoscope: { title: "الأبراج الملتوية", desc: "ما هو برجك؟ لأخبرك بما لا تريد سماعه.", placeholder: "مثال: برج الجوزاء", btnText: "اكشف لي طالعي", inputType: "input" },
+            };
+            const currentTool = toolData[toolName];
+            let inputHtml = '';
+            if (currentTool.inputType === 'textarea') {
+                inputHtml = `<textarea id="tool-input" class="w-full h-40 glass-pane rounded-xl p-4 text-lg" placeholder="${currentTool.placeholder}"></textarea>`;
+            } else if (currentTool.inputType === 'input') {
+                inputHtml = `<input type="text" id="tool-input" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="${currentTool.placeholder}">`;
+            } else if (currentTool.inputType === 'dual-input') {
+                inputHtml = `<div class="flex gap-4"><input type="text" id="tool-input-1" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="${currentTool.placeholder1}"><input type="text" id="tool-input-2" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="${currentTool.placeholder2}"></div>`;
             }
-            toolsViewContainer.innerHTML = html;
+            
+            toolsViewContainer.innerHTML = `
+                <div class="pop-in text-center max-w-2xl mx-auto">
+                    <h2 class="text-3xl font-bold mb-2">${currentTool.title}</h2>
+                    <p class="text-slate-400 mb-6">${currentTool.desc}</p>
+                    ${inputHtml}
+                    <button id="tool-submit-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">${currentTool.btnText}</button>
+                    <div id="tool-result-container" class="mt-6 glass-pane rounded-xl min-h-[100px] hidden text-right p-6"></div>
+                </div>`;
         }
 
         toolsViewContainer.addEventListener('click', async (e) => {
-            const dreamBtn = e.target.closest('#interpret-dream-btn');
-            const excuseBtn = e.target.closest('#generate-excuse-btn');
-            const decisionBtn = e.target.closest('#make-decision-btn');
+            if (e.target.closest('#tool-submit-btn')) {
+                handleToolSubmit(currentView);
+            }
+            if (e.target.closest('.reaction-btn')) {
+                const btn = e.target.closest('.reaction-btn');
+                handleReaction(btn.dataset.responseId, btn.dataset.reaction);
+            }
+             if (e.target.closest('.reply-btn')) {
+                const form = e.target.closest('.reply-form');
+                form.classList.toggle('hidden');
+            }
+            if (e.target.closest('.submit-reply-btn')) {
+                e.preventDefault();
+                const form = e.target.closest('.reply-form');
+                const replyInput = form.querySelector('.reply-input');
+                const responseId = e.target.dataset.responseId;
+                if (replyInput.value.trim()) {
+                    handleReaction(responseId, null, replyInput.value.trim());
+                    replyInput.value = '';
+                    form.classList.add('hidden');
+                }
+            }
+        });
+        
+        async function handleToolSubmit(toolName) {
+            const resultDiv = document.getElementById('tool-result-container');
+            let input, instruction;
+            
+            switch(toolName) {
+                case 'dream':
+                    input = document.getElementById('tool-input').value;
+                    instruction = `أنت "تويست"، مترجم أحلام مصري ساخر. فسر حلم المستخدم "${input}" بطريقة عبثية ومضحكة. افصل ردك إلى جزئين: مقدمة ساخرة، ثم التفسير الفعلي مع تظليل جزء مهم.`;
+                    break;
+                case 'excuse':
+                    input = document.getElementById('tool-input').value;
+                    instruction = `أنت "تويست"، خبير اختراع الأعذار. المستخدم يحتاج عذراً لـ "${input}". اخترع له عذراً مبتكراً ومستفزاً. افصل ردك إلى جزئين: مقدمة ساخرة، ثم العذر الفعلي مع تظليل جزء مهم.`;
+                    break;
+                case 'decision':
+                    const input1 = document.getElementById('tool-input-1').value;
+                    const input2 = document.getElementById('tool-input-2').value;
+                    if (!input1 || !input2) return;
+                    input = `${input1} و ${input2}`;
+                    instruction = `أنت "تويست"، حكيم القرارات. المستخدم حائر بين "${input1}" و "${input2}". اختر له أحدهما وقدم سبباً ساخراً. افصل ردك إلى جزئين: مقدمة ساخرة، ثم القرار والسبب مع تظليل القرار.`;
+                    break;
+                case 'poet':
+                    input = document.getElementById('tool-input').value;
+                    instruction = `أنت "تويست"، شاعر مصري فاشل. اكتب قصيدة قصيرة (بيتين أو ثلاثة) عن "${input}". يجب أن تكون القصيدة مضحكة وغير موزونة. افصل ردك إلى جزئين: مقدمة ساخرة، ثم القصيدة مع تظليل جزء مهم.`;
+                    break;
+                case 'compliment':
+                    input = document.getElementById('tool-input').value;
+                    instruction = `أنت "تويست"، خبير المجاملات المبطنة. المستخدم يريد مجاملة لـ "${input}". قدم له مجاملة تبدو جيدة في الظاهر لكنها إهانة مبطنة. افصل ردك إلى جزئين: مقدمة ساخرة، ثم المجاملة مع تظليل جزء مهم.`;
+                    break;
+                case 'horoscope':
+                    input = document.getElementById('tool-input').value;
+                    instruction = `أنت "تويست"، عالم فلكي نصاب. المستخدم من برج "${input}". اكتب له حظه اليومي بشكل ساخر وغير منطقي إطلاقاً. افصل ردك إلى جزئين: مقدمة ساخرة، ثم الحظ اليومي مع تظليل جزء مهم.`;
+                    break;
+            }
 
-            if (dreamBtn) {
-                const input = document.getElementById('dream-input').value;
-                const resultDiv = document.getElementById('dream-result');
-                if (!input) return;
-                resultDiv.classList.remove('hidden');
-                resultDiv.innerHTML = `<div class="animate-pulse">تويست يغوص في أعماق عقلك الباطن...</div>`;
-                const instruction = `أنت "تويست"، مترجم أحلام مصري معندوش وقت للكلام الفارغ. المستخدم بيحكي حلمه. اديله تفسير عبثي وساخر يخليه يبطل يحلم تاني. حلم المستخدم: "${input}"`;
-                const response = await getGeminiResponseWithContext(input, [], instruction);
-                resultDiv.innerHTML = `<p>${response}</p>`;
+            if (!input) return;
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `<div class="animate-pulse text-center">تويست يخلط المكونات...</div>`;
+            
+            const response = await getToolResponse(input, instruction);
+            
+            // Save response to get an ID for feedback
+            const responseRef = await addDoc(collection(db, `tools/${toolName}/responses`), {
+                prompt: input,
+                response: response,
+                createdAt: serverTimestamp()
+            });
+
+            renderToolResponse(resultDiv, response, responseRef.id);
+        }
+
+        async function getToolResponse(prompt, instruction) {
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: instruction }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "personaIntro": { "type": "STRING" },
+                            "mainAnswer": { "type": "STRING" }
+                        },
+                        required: ["personaIntro", "mainAnswer"]
+                    }
+                }
+            };
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                const parsedJson = JSON.parse(result.candidates[0].content.parts[0].text);
+                return parsedJson;
+            } catch (e) {
+                console.error("Tool response error", e);
+                return { personaIntro: "عفواً يا ${currentUserData.displayName}...", mainAnswer: "عقلي سخن ومش قادر أفكر دلوقتي." };
             }
-            if (excuseBtn) {
-                const input = document.getElementById('excuse-input').value;
-                const resultDiv = document.getElementById('excuse-result');
-                if (!input) return;
-                resultDiv.classList.remove('hidden');
-                resultDiv.innerHTML = `<div class="animate-pulse">تويست يحبك لك أفضل كذبة...</div>`;
-                const instruction = `أنت "تويست"، خبير اختراع الأعذار اللي متتصدقش. المستخدم يحتاج عذراً لـ "${input}". اخترع له عذراً مبتكراً، مضحكاً، ومستفزاً.`;
-                const response = await getGeminiResponseWithContext(input, [], instruction);
-                resultDiv.innerHTML = `<p>${response}</p>`;
+        }
+
+        function renderToolResponse(container, response, responseId) {
+            const formattedAnswer = response.mainAnswer.replace(/\*\*(.*?)\*\*/g, '<strong class="text-[color:var(--accent-color)]">$1</strong>');
+            container.innerHTML = `
+                <p class="text-slate-400 italic mb-4">${response.personaIntro}</p>
+                <div class="border-t border-slate-700/50 pt-4 text-2xl font-bold">${formattedAnswer}</div>
+                <div class="mt-6 flex items-center justify-center gap-6 border-t border-slate-700/50 pt-4">
+                    <button class="reaction-btn" data-response-id="${responseId}" data-reaction="funny">😂</button>
+                    <button class="reaction-btn" data-response-id="${responseId}" data-reaction="love">❤️</button>
+                    <button class="reaction-btn" data-response-id="${responseId}" data-reaction="think">🤔</button>
+                    <button class="reply-btn action-icon" title="أضف تعليق"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button>
+                </div>
+                <form class="reply-form hidden mt-4 flex gap-2">
+                    <input type="text" class="reply-input flex-grow bg-slate-800 rounded-lg p-2" placeholder="اكتب تعليقك...">
+                    <button type="submit" class="submit-reply-btn bg-sky-600 px-4 rounded-lg" data-response-id="${responseId}">إرسال</button>
+                </form>
+            `;
+        }
+        
+        async function handleReaction(responseId, reactionType, comment = null) {
+            if (!responseId) return;
+            const feedbackRef = doc(db, `tool_feedback/${responseId}_${auth.currentUser.uid}`);
+            const feedbackSnap = await getDoc(feedbackRef);
+            
+            let data = {
+                responseId: responseId,
+                userId: auth.currentUser.uid,
+                tool: currentView,
+                timestamp: serverTimestamp()
+            };
+            
+            if (reactionType) data.reaction = reactionType;
+            if (comment) data.comment = comment;
+
+            if (feedbackSnap.exists()) {
+                await updateDoc(feedbackRef, data);
+            } else {
+                await setDoc(feedbackRef, data);
             }
-            if (decisionBtn) {
-                const input1 = document.getElementById('decision-input-1').value;
-                const input2 = document.getElementById('decision-input-2').value;
-                const resultDiv = document.getElementById('decision-result');
-                if (!input1 || !input2) return;
-                resultDiv.classList.remove('hidden');
-                resultDiv.innerHTML = `<div class="animate-pulse">تويست يزن الخيارات بميزانه الخاص...</div>`;
-                const instruction = `أنت "تويست"، الحكيم اللي بيكره الاختيارات. المستخدم حائر بين: "${input1}" و "${input2}". اختر له أحدهما وقدم سبباً واحداً فقط لاختيارك، يجب أن يكون السبب ساخراً أو غير منطقي.`;
-                const response = await getGeminiResponseWithContext(`${input1} vs ${input2}`, [], instruction);
-                resultDiv.innerHTML = `<p>${response}</p>`;
+            
+            const btnContainer = document.querySelector(`button[data-response-id="${responseId}"]`).parentElement;
+            btnContainer.querySelectorAll('.reaction-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if(btn.dataset.reaction === reactionType) btn.classList.add('selected');
+            });
+        }
+
+        // --- Init & Event Listeners ---
+        chatForm.addEventListener('submit', handleSubmit);
+        newChatBtn.addEventListener('click', async () => await createNewChat(true));
+        sidebarToggleBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+        closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
+        openToolsModalBtn.addEventListener('click', () => toolsModal.classList.remove('hidden'));
+        closeToolsModalBtn.addEventListener('click', () => toolsModal.classList.add('hidden'));
+        
+        toolsGrid.addEventListener('click', (e) => {
+            const toolBtn = e.target.closest('.tool-btn-grid');
+            if (toolBtn) {
+                switchView(toolBtn.dataset.tool);
+                toolsModal.classList.add('hidden');
             }
         });
 
