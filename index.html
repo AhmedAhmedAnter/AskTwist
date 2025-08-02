@@ -284,4 +284,471 @@
         function updateUserProfileUI() {
             if (!currentUserData) return;
             userProfile.innerHTML = `
-                <img src=
+                <img src="${currentUserData.photoURL}" alt="User Avatar" class="w-10 h-10 rounded-full border-2" style="border-color: var(--accent-color);">
+                <span class="font-semibold flex-grow">${currentUserData.displayName}</span>
+                <button id="theme-switcher" title="تغيير المظهر" class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg></button>
+                <button id="logout-btn" title="تسجيل الخروج" class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
+            `;
+            document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+            document.getElementById('theme-switcher').addEventListener('click', switchTheme);
+        }
+        
+        const themes = ['default', 'theme-cosmic', 'theme-forest'];
+        let currentThemeIndex = 0;
+        function switchTheme() {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            const newTheme = themes[currentThemeIndex];
+            document.body.className = `bg-slate-900 text-white ${newTheme}`;
+            localStorage.setItem('twist-theme', newTheme);
+        }
+
+        // --- View Management ---
+        function switchView(viewName) {
+            currentView = viewName;
+            chatView.classList.toggle('hidden', viewName !== 'chat');
+            toolsViewContainer.classList.toggle('hidden', viewName === 'chat');
+
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            if (viewName !== 'chat') {
+                document.querySelector(`.tool-btn[data-tool="${viewName}"]`)?.classList.add('active');
+                renderToolUI(viewName);
+            } else {
+                const q = query(collection(db, `users/${auth.currentUser.uid}/chats`), orderBy("createdAt", "desc"));
+                getDocs(q).then(snapshot => renderChatList(snapshot.docs));
+            }
+        }
+
+        // --- Chat Management ---
+        function listenToUserChats() {
+            const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
+            const q = query(chatsRef, orderBy("createdAt", "desc"));
+            unsubscribeChats = onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    createNewChat(true);
+                } else {
+                    renderChatList(snapshot.docs);
+                    if (!currentChatId || !snapshot.docs.some(doc => doc.id === currentChatId)) {
+                        switchChat(snapshot.docs[0].id);
+                    }
+                }
+            });
+        }
+
+        function renderChatList(chatDocs) {
+            chatList.innerHTML = '';
+            chatDocs.forEach(doc => {
+                const chatData = doc.data();
+                const chatItem = document.createElement('div');
+                chatItem.className = 'flex items-center gap-2 group';
+                const chatButton = document.createElement('button');
+                chatButton.dataset.chatId = doc.id;
+                const isActive = doc.id === currentChatId && currentView === 'chat';
+                chatButton.className = `flex-grow text-right p-2 rounded-lg truncate transition-colors ${isActive ? 'bg-sky-600' : 'hover:bg-slate-700'}`;
+                chatButton.textContent = chatData.title || "محادثة قديمة";
+                const deleteButton = document.createElement('button');
+                deleteButton.dataset.chatId = doc.id;
+                deleteButton.className = 'delete-chat-btn p-1 text-slate-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity';
+                deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>`;
+                chatItem.appendChild(chatButton);
+                chatItem.appendChild(deleteButton);
+                chatList.appendChild(chatItem);
+            });
+        }
+        
+        chatList.addEventListener('click', (e) => {
+            const chatButton = e.target.closest('button:not(.delete-chat-btn)');
+            const deleteButton = e.target.closest('.delete-chat-btn');
+            if (deleteButton) {
+                const chatIdToDelete = deleteButton.dataset.chatId;
+                if (confirm('هل أنت متأكد من حذف هذه المحادثة؟')) deleteChat(chatIdToDelete);
+            } else if (chatButton) {
+                const chatId = chatButton.dataset.chatId;
+                switchView('chat');
+                if (chatId !== currentChatId) switchChat(chatId);
+            }
+        });
+
+        async function deleteChat(chatIdToDelete) {
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatIdToDelete}/messages`);
+            const messagesSnap = await getDocs(messagesRef);
+            await Promise.all(messagesSnap.docs.map(doc => deleteDoc(doc.ref)));
+            await deleteDoc(doc(db, `users/${auth.currentUser.uid}/chats/${chatIdToDelete}`));
+            if (currentChatId === chatIdToDelete) currentChatId = null; 
+        }
+
+        function switchChat(chatId) {
+            currentChatId = chatId;
+            listenToMessages(chatId);
+            const q = query(collection(db, `users/${auth.currentUser.uid}/chats`), orderBy("createdAt", "desc"));
+            getDocs(q).then(snapshot => renderChatList(snapshot.docs));
+        }
+
+        async function createNewChat(withWelcome = false) {
+            switchView('chat');
+            const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
+            const newChatRef = await addDoc(chatsRef, { createdAt: serverTimestamp(), title: "محادثة جديدة" });
+            switchChat(newChatRef.id);
+            if (withWelcome) await addWelcomeMessage();
+        }
+
+        function listenToMessages(chatId) {
+            if (unsubscribeMessages) unsubscribeMessages();
+            chatMessages.innerHTML = '';
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp"));
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                if (snapshot.empty && currentView === 'chat') {
+                    addWelcomeMessageUI();
+                } else {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const msgData = change.doc.data();
+                            addMessageToUI(msgData.text, msgData.sender, change.doc.id);
+                        }
+                    });
+                }
+            });
+        }
+        
+        function addWelcomeMessageUI() {
+            chatMessages.innerHTML = `<div id="welcome-message" class="text-center pop-in">
+                <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20">T</div>
+                <h1 class="text-4xl font-bold text-slate-100 mt-4">اسأل تويست</h1>
+                <p class="text-slate-400 mt-2 text-lg">مرحباً ${currentUserData.displayName}! اسأل أي شيء... أو جرب إحدى أدواتي من القائمة.</p>
+            </div>`;
+        }
+
+        async function addWelcomeMessage() {
+            const welcomeText = `أهلاً يا ${currentUserData.displayName}. أنا تويست، جاي مخصوص عشان أجاوب على أسئلتك المصيرية... أو أتريق عليها. اسأل وأمرك لله.`;
+            await saveMessage(welcomeText, 'bot');
+        }
+        
+        // --- Message & Tool Handling ---
+        function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
+
+        function addMessageToUI(text, sender, messageId) {
+            document.getElementById('welcome-message')?.remove();
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-wrapper pop-in';
+            if (sender === 'user') {
+                messageContainer.innerHTML = `<div class="flex items-start gap-3 justify-end"><div class="p-3 rounded-xl max-w-lg text-white shadow-md" style="background-color: var(--user-bubble-color);"><p>${text}</p></div><img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar"></div>`;
+            } else {
+                messageContainer.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div>
+                        <div class="bg-slate-700/80 glass-pane p-3 rounded-xl max-w-lg shadow-md"><p class="bot-text-content"></p></div>
+                    </div>
+                    <div class="flex items-center gap-3 mr-12 mt-2">
+                        <button class="play-audio-btn action-icon" data-text="${text}" title="استمع للرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg></button>
+                        <button class="share-card-btn action-icon" data-message-id="${messageId}" title="مشاركة الرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg></button>
+                        <button class="amplify-btn action-icon" data-message-id="${messageId}" title="زوّدها يا تويست"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 011-1h.5a1.5 1.5 0 000-3H6a1 1 0 01-1-1V8a1 1 0 011-1h3a1 1 0 001-1v-.5z" /></svg></button>
+                    </div>`;
+                animateTyping(messageContainer.querySelector('.bot-text-content'), text);
+            }
+            chatMessages.appendChild(messageContainer);
+            scrollToBottom();
+        }
+        
+        function animateTyping(element, text) {
+            let i = 0;
+            element.textContent = "";
+            const cursor = document.createElement('span');
+            cursor.className = 'blinking-cursor';
+            cursor.textContent = '▋';
+            element.appendChild(cursor);
+            const typingInterval = setInterval(() => {
+                if (i < text.length) {
+                    element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+                    i++;
+                    scrollToBottom();
+                } else {
+                    clearInterval(typingInterval);
+                    cursor.remove();
+                }
+            }, 30);
+        }
+
+        async function saveMessage(text, sender) {
+            if (!currentChatId) return;
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            return await addDoc(messagesRef, { text, sender, timestamp: serverTimestamp() });
+        }
+
+        async function getTwistResponse(text) {
+            if (text.includes("اكلمها")) {
+                triggerConfetti();
+                return "يا قلبي! روح كلمها فوراً، الحياة قصيرة والفرص مبتستناش!";
+            }
+            return getGeminiResponseWithContext(text);
+        }
+
+        async function getGeminiResponseWithContext(prompt, historyOverride = null, customSystemInstruction = null) {
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp", "desc"), limit(4));
+            const snapshot = await getDocs(q);
+            const history = historyOverride || snapshot.docs.reverse().map(doc => ({ role: doc.data().sender === 'user' ? 'user' : 'model', parts: [{ text: doc.data().text }] }));
+            
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const systemInstruction = customSystemInstruction || `أنت "تويست"، بوت مصري ذكي ودمه تقيل. مهمتك ترد على المستخدم اللي اسمه "${currentUserData.displayName}" بأسلوب ساخر وفيه قصف جبهات وطحن خواطر. لازم ردودك تكون قصيرة، غير متوقعة، وباللهجة المصرية. لو طلب منك طلب مباشر زي "قول نكتة"، نفذ الطلب بس بأسلوبك الساخر. ملاحظاتك الحالية عن المستخدم: "${currentUserData.aiNotes}"`;
+            
+            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "تمام، أنا جاهز." }] }, ...history ];
+            if (!historyOverride) contents.push({ role: 'user', parts: [{ text: prompt }] });
+
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents }) });
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                const result = await response.json();
+                const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "عفواً، حدث خطأ ما.";
+                if (!historyOverride) updateUserAINotes(prompt, aiResponse);
+                return aiResponse;
+            } catch (error) {
+                console.error("Gemini API error:", error);
+                return "يبدو أن عقلي الإلكتروني يعاني من صداع الآن، حاول مرة أخرى.";
+            }
+        }
+        
+        async function updateUserAINotes(lastQuestion, lastAnswer) {
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const prompt = `حلل شخصية المستخدم من سؤاله الأخير وإجابتي عليه، وحدّث ملاحظاتك عنه في جملة واحدة بأسلوب ساخر. الملاحظات السابقة: "${currentUserData.aiNotes}" سؤاله الأخير: "${lastQuestion}" إجابتي: "${lastAnswer}" الملاحظات المحدثة (جملة واحدة بس):`;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }) });
+                const result = await response.json();
+                const newNotes = result.candidates?.[0]?.content?.parts?.[0]?.text.trim();
+                if (newNotes) {
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), { aiNotes: newNotes });
+                    currentUserData.aiNotes = newNotes;
+                }
+            } catch(e) { console.error("Could not update AI notes:", e); }
+        }
+
+        async function generateChatTitle(firstMessage) {
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const prompt = `لخص هذا السؤال في ٣ كلمات أو أقل ليكون عنواناً للمحادثة: "${firstMessage}"`;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }) });
+                const result = await response.json();
+                const newTitle = result.candidates?.[0]?.content?.parts?.[0]?.text.trim();
+                if (newTitle) await updateDoc(doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}`), { title: newTitle });
+            } catch(e) { console.error("Could not generate title:", e); }
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            const text = userInput.value.trim();
+            if (!text || !currentChatId) return;
+            submitBtn.disabled = true;
+            userInput.value = '';
+            
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            const messagesSnap = await getDocs(messagesRef);
+            const isFirstUserMessage = messagesSnap.docs.filter(doc => doc.data().sender === 'user').length === 0;
+
+            await saveMessage(text, 'user');
+            sendSynth.triggerAttackRelease("C5", "8n");
+
+            if (isFirstUserMessage) await generateChatTitle(text);
+            
+            document.getElementById('chat-messages').innerHTML += `<div id="loading-indicator" class="flex items-start gap-3 pop-in"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 animate-pulse">T</div><div class="bg-slate-700/80 glass-pane p-4 rounded-xl"><div class="flex items-center space-x-2 space-x-reverse"><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span></div></div></div>`;
+            scrollToBottom();
+
+            const responseText = await getTwistResponse(text);
+            document.getElementById('loading-indicator')?.remove();
+            
+            await saveMessage(responseText, 'bot');
+            receiveSynth.triggerAttackRelease("G5", "8n", Tone.now() + 0.1);
+            
+            submitBtn.disabled = false;
+            userInput.focus();
+        }
+        
+        // --- New Feature Handlers ---
+        chatMessages.addEventListener('click', async (e) => {
+            const playBtn = e.target.closest('.play-audio-btn'), shareBtn = e.target.closest('.share-card-btn'), amplifyBtn = e.target.closest('.amplify-btn');
+            if (playBtn) { playBtn.disabled = true; await playAudio(playBtn.dataset.text); playBtn.disabled = false; }
+            if (shareBtn) await generateShareCard(shareBtn.dataset.messageId);
+            if (amplifyBtn) { amplifyBtn.disabled = true; await amplifyResponse(amplifyBtn.dataset.messageId); amplifyBtn.disabled = false; }
+        });
+
+        async function playAudio(text) {
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Rasalgethi" } } } }, model: "gemini-2.5-flash-preview-tts" };
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                const audioData = result.candidates[0].content.parts[0].inlineData.data;
+                const pcmData = Uint8Array.from(atob(audioData), c => c.charCodeAt(0)).buffer;
+                const pcm16 = new Int16Array(pcmData);
+                const wavBlob = pcmToWav(pcm16, parseInt(result.candidates[0].content.parts[0].inlineData.mimeType.match(/rate=(\d+)/)[1], 10));
+                new Audio(URL.createObjectURL(wavBlob)).play();
+            } catch (error) { console.error("TTS Error:", error); }
+        }
+        
+        function pcmToWav(pcmData, sampleRate) {
+            const view = new DataView(new ArrayBuffer(44 + pcmData.length * 2));
+            function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
+            writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcmData.length * 2, true); writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+            writeString(view, 36, 'data'); view.setUint32(40, pcmData.length * 2, true);
+            for (let i = 0; i < pcmData.length; i++) view.setInt16(44 + i * 2, pcmData[i], true);
+            return new Blob([view], { type: 'audio/wav' });
+        }
+        
+        async function generateShareCard(botMessageId) {
+            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
+            const botMsgSnap = await getDoc(botMsgRef);
+            if (!botMsgSnap.exists()) return;
+            const botText = botMsgSnap.data().text;
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp", "desc"));
+            const snapshot = await getDocs(q);
+            let userText = "سؤال...";
+            let found = false;
+            for (const doc of snapshot.docs) {
+                if (doc.id === botMessageId) found = true;
+                if (found && doc.data().sender === 'user') { userText = doc.data().text; break; }
+            }
+            const ctx = shareCanvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 1000, 1000);
+            gradient.addColorStop(0, getComputedStyle(document.body).getPropertyValue('--bg-gradient-start'));
+            gradient.addColorStop(1, getComputedStyle(document.body).getPropertyValue('--bg-gradient-mid2'));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1000, 1000);
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#cbd5e1'; ctx.font = 'bold 50px Cairo';
+            wrapText(ctx, `أنت سألت: "${userText}"`, 500, 200, 900, 60);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent-color'); ctx.font = 'bold 70px Cairo';
+            wrapText(ctx, `تويست أجاب: "${botText}"`, 500, 500, 900, 80);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '40px Cairo';
+            ctx.fillText('asstwist.web.app', 500, 900);
+            downloadBtn.href = shareCanvas.toDataURL('image/png');
+            shareModal.classList.remove('hidden');
+        }
+        
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' '); let line = '';
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                if (context.measureText(testLine).width > maxWidth && n > 0) {
+                    context.fillText(line, x, y); line = words[n] + ' '; y += lineHeight;
+                } else { line = testLine; }
+            }
+            context.fillText(line, x, y);
+        }
+
+        async function amplifyResponse(botMessageId) {
+            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
+            const botMsgSnap = await getDoc(botMsgRef);
+            if (!botMsgSnap.exists()) return;
+            const botText = botMsgSnap.data().text;
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp", "desc"));
+            const snapshot = await getDocs(q);
+            let userText = ""; let found = false;
+            for (const doc of snapshot.docs) {
+                if (doc.id === botMessageId) found = true;
+                if (found && doc.data().sender === 'user') { userText = doc.data().text; break; }
+            }
+            document.getElementById('chat-messages').innerHTML += `<div id="loading-indicator" class="flex items-start gap-3 pop-in"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 animate-pulse">T</div><div class="bg-slate-700/80 glass-pane p-4 rounded-xl"><div class="flex items-center space-x-2 space-x-reverse"><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span></div></div></div>`;
+            scrollToBottom();
+            const amplifyPrompt = `أنا رديت على المستخدم بالرد ده: "${botText}". دلوقتي محتاج أزوّدها وأرد رد أقوى وأكثر سخرية وقصف جبهة. فاجئني برد يخليه يراجع نفسه.`;
+            const amplifiedResponse = await getGeminiResponseWithContext(amplifyPrompt, [{ role: 'user', parts: [{ text: amplifyPrompt }] }]);
+            document.getElementById('loading-indicator')?.remove();
+            await saveMessage(amplifiedResponse, 'bot');
+            amplifySynth.triggerAttackRelease("C4", "8n");
+        }
+
+        // --- Event Listeners ---
+        chatForm.addEventListener('submit', handleSubmit);
+        newChatBtn.addEventListener('click', async () => await createNewChat(true));
+        menuBtn.addEventListener('click', () => sidebar.classList.toggle('hidden'));
+        closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
+        toolsList.addEventListener('click', (e) => {
+            const toolBtn = e.target.closest('.tool-btn');
+            if (toolBtn) switchView(toolBtn.dataset.tool);
+        });
+        
+        function renderToolUI(toolName) {
+            let html = '';
+            if (toolName === 'dream') {
+                html = `
+                    <div class="pop-in text-center max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold mb-2">مترجم الأحلام</h2>
+                        <p class="text-slate-400 mb-6">أخبرني بحلمك، وسأكشف لك عن معانيه الخفية (والعبثية).</p>
+                        <textarea id="dream-input" class="w-full h-40 glass-pane rounded-xl p-4 text-lg" placeholder="رأيت في المنام أنني أطير..."></textarea>
+                        <button id="interpret-dream-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">فسّر الحلم</button>
+                        <div id="dream-result" class="mt-6 p-4 glass-pane rounded-xl min-h-[100px] hidden"></div>
+                    </div>
+                `;
+            } else if (toolName === 'excuse') {
+                html = `
+                    <div class="pop-in text-center max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold mb-2">مولّد الأعذار</h2>
+                        <p class="text-slate-400 mb-6">لماذا تريد عذراً؟ (مثال: للتأخر عن العمل)</p>
+                        <input type="text" id="excuse-input" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="للتأخر عن العمل...">
+                        <button id="generate-excuse-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">اخترع لي عذراً</button>
+                        <div id="excuse-result" class="mt-6 p-4 glass-pane rounded-xl min-h-[100px] hidden"></div>
+                    </div>
+                `;
+            } else if (toolName === 'decision') {
+                 html = `
+                    <div class="pop-in text-center max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold mb-2">صانع القرار</h2>
+                        <p class="text-slate-400 mb-6">أعطني خيارين، وسأختار لك الأنسب... بوجهة نظري طبعاً.</p>
+                        <div class="flex gap-4">
+                            <input type="text" id="decision-input-1" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="الخيار الأول">
+                            <input type="text" id="decision-input-2" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="الخيار الثاني">
+                        </div>
+                        <button id="make-decision-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">اختر لي يا تويست</button>
+                        <div id="decision-result" class="mt-6 p-4 glass-pane rounded-xl min-h-[100px] hidden"></div>
+                    </div>
+                `;
+            }
+            toolsViewContainer.innerHTML = html;
+        }
+
+        toolsViewContainer.addEventListener('click', async (e) => {
+            const dreamBtn = e.target.closest('#interpret-dream-btn');
+            const excuseBtn = e.target.closest('#generate-excuse-btn');
+            const decisionBtn = e.target.closest('#make-decision-btn');
+
+            if (dreamBtn) {
+                const input = document.getElementById('dream-input').value;
+                const resultDiv = document.getElementById('dream-result');
+                if (!input) return;
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerHTML = `<div class="animate-pulse">تويست يغوص في أعماق عقلك الباطن...</div>`;
+                const instruction = `أنت "تويست"، مترجم أحلام مصري معندوش وقت للكلام الفارغ. المستخدم بيحكي حلمه. اديله تفسير عبثي وساخر يخليه يبطل يحلم تاني. حلم المستخدم: "${input}"`;
+                const response = await getGeminiResponseWithContext(input, [], instruction);
+                resultDiv.innerHTML = `<p>${response}</p>`;
+            }
+            if (excuseBtn) {
+                const input = document.getElementById('excuse-input').value;
+                const resultDiv = document.getElementById('excuse-result');
+                if (!input) return;
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerHTML = `<div class="animate-pulse">تويست يحبك لك أفضل كذبة...</div>`;
+                const instruction = `أنت "تويست"، خبير اختراع الأعذار اللي متتصدقش. المستخدم يحتاج عذراً لـ "${input}". اخترع له عذراً مبتكراً، مضحكاً، ومستفزاً.`;
+                const response = await getGeminiResponseWithContext(input, [], instruction);
+                resultDiv.innerHTML = `<p>${response}</p>`;
+            }
+            if (decisionBtn) {
+                const input1 = document.getElementById('decision-input-1').value;
+                const input2 = document.getElementById('decision-input-2').value;
+                const resultDiv = document.getElementById('decision-result');
+                if (!input1 || !input2) return;
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerHTML = `<div class="animate-pulse">تويست يزن الخيارات بميزانه الخاص...</div>`;
+                const instruction = `أنت "تويست"، الحكيم اللي بيكره الاختيارات. المستخدم حائر بين: "${input1}" و "${input2}". اختر له أحدهما وقدم سبباً واحداً فقط لاختيارك، يجب أن يكون السبب ساخراً أو غير منطقي.`;
+                const response = await getGeminiResponseWithContext(`${input1} vs ${input2}`, [], instruction);
+                resultDiv.innerHTML = `<p>${response}</p>`;
+            }
+        });
+
+    </script>
+</body>
+</html>
