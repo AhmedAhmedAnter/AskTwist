@@ -156,7 +156,7 @@
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, setDoc, query, orderBy, limit, onSnapshot, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // --- DOM Elements ---
@@ -209,10 +209,6 @@
         const amplifySynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination();
 
         // --- Auth & UI Setup ---
-        getRedirectResult(auth).catch(error => {
-            console.error("Error getting redirect result", error);
-        });
-
         onAuthStateChanged(auth, async (user) => {
             if (unsubscribeChats) unsubscribeChats();
             if (unsubscribeMessages) unsubscribeMessages();
@@ -234,7 +230,7 @@
 
         googleSigninBtn.addEventListener('click', () => {
             const provider = new GoogleAuthProvider();
-            signInWithRedirect(auth, provider);
+            signInWithPopup(auth, provider).catch(err => console.error("Sign-in error", err));
         });
 
         nameForm.addEventListener('submit', async (e) => {
@@ -651,9 +647,29 @@
         newChatBtn.addEventListener('click', async () => await createNewChat(true));
         sidebarToggleBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
         closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
-        openToolsModalBtn.addEventListener('click', () => toolsModal.classList.remove('hidden'));
+        openToolsModalBtn.addEventListener('click', () => {
+            renderToolsGrid();
+            toolsModal.classList.remove('hidden');
+        });
         closeToolsModalBtn.addEventListener('click', () => toolsModal.classList.add('hidden'));
         
+        function renderToolsGrid() {
+            const toolData = {
+                dream: { title: "مترجم الأحلام", icon: "🌙" },
+                excuse: { title: "مولّد الأعذار", icon: "🏃‍♂️" },
+                decision: { title: "صانع القرار", icon: "🤔" },
+                poet: { title: "شاعر الذكاء الاصطناعي", icon: "📜" },
+                compliment: { title: "مولّد الإطراءات", icon: "😏" },
+                horoscope: { title: "الأبراج الملتوية", icon: "✨" },
+            };
+            toolsGrid.innerHTML = Object.entries(toolData).map(([key, {title, icon}]) => `
+                <button class="tool-btn-grid glass-pane p-4 rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-slate-700/50 transition-colors" data-tool="${key}">
+                    <span class="text-4xl">${icon}</span>
+                    <span class="font-semibold">${title}</span>
+                </button>
+            `).join('');
+        }
+
         toolsGrid.addEventListener('click', (e) => {
             const toolBtn = e.target.closest('.tool-btn-grid');
             if (toolBtn) {
