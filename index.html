@@ -65,30 +65,15 @@
         .confetti { position: absolute; width: 10px; height: 10px; opacity: 0.9; animation: fall 3s linear forwards; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
         
-        .action-icon {
-            color: #94a3b8; /* slate-400 */
-            transition: color 0.2s, transform 0.2s;
-        }
-        .action-icon:hover {
-            color: var(--accent-color);
-            transform: scale(1.1);
-        }
-        .tool-btn {
-            width: 100%;
-            text-align: right;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            transition: background-color 0.2s, color 0.2s;
-            font-weight: 600;
-            color: #cbd5e1; /* slate-300 */
-        }
-        .tool-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        .tool-btn.active {
-            background-color: var(--accent-color);
-            color: #020617; /* slate-900 */
-        }
+        .action-icon { color: #94a3b8; transition: color 0.2s, transform 0.2s; }
+        .action-icon:hover { color: var(--accent-color); transform: scale(1.1); }
+        .tool-btn { width: 100%; text-align: right; padding: 0.75rem; border-radius: 0.5rem; transition: background-color 0.2s, color 0.2s; font-weight: 600; color: #cbd5e1; }
+        .tool-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .tool-btn.active { background-color: var(--accent-color); color: #020617; }
+        .reaction-btn { transition: transform 0.2s, filter 0.2s; }
+        .reaction-btn:hover { transform: scale(1.2); }
+        .reaction-btn.selected { transform: scale(1.2); filter: drop-shadow(0 0 5px var(--accent-color)); }
+        .reaction-btn:disabled { filter: grayscale(80%) opacity(50%); cursor: not-allowed; }
 
     </style>
 </head>
@@ -96,7 +81,7 @@
 
     <div id="confetti-container" class="confetti-container"></div>
 
-    <!-- Login & Name Modals -->
+    <!-- Modals -->
     <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
         <div class="text-center p-8 glass-pane rounded-2xl shadow-2xl">
             <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20 mb-4">T</div>
@@ -146,6 +131,9 @@
                         <button class="tool-btn" data-tool="dream">مترجم الأحلام</button>
                         <button class="tool-btn" data-tool="excuse">مولّد الأعذار</button>
                         <button class="tool-btn" data-tool="decision">صانع القرار</button>
+                        <button class="tool-btn" data-tool="poet">شاعر الذكاء الاصطناعي</button>
+                        <button class="tool-btn" data-tool="compliment">مولّد الإطراءات</button>
+                        <button class="tool-btn" data-tool="horoscope">الأبراج الملتوية</button>
                     </div>
                 </div>
             </div>
@@ -752,3 +740,5 @@
     </script>
 </body>
 </html>
+" and the user wants me to "جميل جدا الادوات دي جميلة ضيف 3 ادوات كمان + format text **أكل المحشي** يكون بولد + افصل الإجابة عن رد البوت زي كدا "أنا "تويست"، الحكيم اللي بيكره الاختيارات. يا أيها الحائر... تنهد. مجدداً! حسناً، اخترت لك **أكل المحشي**. والسبب؟ لأنه أسهل على اللسان. انطق "فراخ" بسرعة عشر مرات، ثم انطق "محشي" عشر مرات. سترى!"
+افصل دي عن التانية "أنا "تويست"، الحكيم اللي بيكره الاختيارات. يا أيها الحائر... تنهد. مجدداً! حسناً، اخترت لك" + add reaction علي كل رد من كل اداة زي الفيسبوك كدا مع إمكانية ترك رد لمعرفةإيه إلي بيعجب الناس و إيه لاء و ال ai يتعمل م
