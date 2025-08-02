@@ -1,604 +1,382 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>اسأل تويست</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-      body {
-        font-family: "Cairo", sans-serif;
-        background: linear-gradient(-45deg, #020617, #1e293b, #4a044e, #1d4ed8);
-        background-size: 400% 400%;
-        animation: gradientBG 20s ease infinite;
-      }
-      @keyframes gradientBG {
-        0% {
-          background-position: 0% 50%;
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(-45deg, #020617, #1e293b, #4a044e, #1d4ed8);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
         }
-        50% {
-          background-position: 100% 50%;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        100% {
-          background-position: 0% 50%;
+        /* Custom scrollbar for a cleaner look */
+        .chat-messages::-webkit-scrollbar { width: 8px; }
+        .chat-messages::-webkit-scrollbar-track { background: #0f172a; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .typewriter {
+            overflow: hidden;
+            white-space: pre-wrap;
+            animation: typing 1.5s steps(40, end);
+            width: 100%;
         }
-      }
-      /* Custom scrollbar for a cleaner look */
-      .chat-messages::-webkit-scrollbar {
-        width: 8px;
-      }
-      .chat-messages::-webkit-scrollbar-track {
-        background: #0f172a;
-      }
-      .chat-messages::-webkit-scrollbar-thumb {
-        background: #334155;
-        border-radius: 4px;
-      }
-      .chat-messages::-webkit-scrollbar-thumb:hover {
-        background: #475569;
-      }
-
-      .typewriter {
-        overflow: hidden;
-        white-space: pre-wrap;
-        animation: typing 1.5s steps(40, end);
-        width: 100%;
-      }
-      @keyframes typing {
-        from {
-          width: 0;
-        }
-        to {
-          width: 100%;
-        }
-      }
-
-      .confetti-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        overflow: hidden;
-        z-index: 100;
-      }
-      .confetti {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        opacity: 0.9;
-        animation: fall 3s linear forwards;
-      }
-      @keyframes fall {
-        to {
-          transform: translateY(100vh) rotate(360deg);
-          opacity: 0;
-        }
-      }
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        
+        .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 100; }
+        .confetti { position: absolute; width: 10px; height: 10px; opacity: 0.9; animation: fall 3s linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
     </style>
-  </head>
-  <body class="bg-slate-900 text-white">
+</head>
+<body class="bg-slate-900 text-white">
+
     <div id="confetti-container" class="confetti-container"></div>
 
     <!-- Login Overlay -->
-    <div
-      id="login-overlay"
-      class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-50"
-    >
-      <div
-        class="text-center p-8 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700"
-      >
-        <div
-          class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20 mb-4"
-        >
-          T
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-50">
+        <div class="text-center p-8 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700">
+            <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20 mb-4">T</div>
+            <h1 class="text-3xl font-bold text-slate-100">أهلاً بك في "اسأل تويست"</h1>
+            <p class="text-slate-400 mt-2 mb-6">سجّل دخولك لتبدأ المغامرة.</p>
+            <button id="google-signin-btn" class="w-full flex items-center justify-center gap-3 bg-white text-slate-800 font-bold py-3 px-6 rounded-lg hover:bg-slate-200 transition-colors">
+                <svg class="w-6 h-6" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+                تسجيل الدخول باستخدام جوجل
+            </button>
         </div>
-        <h1 class="text-3xl font-bold text-slate-100">
-          أهلاً بك في "اسأل تويست"
-        </h1>
-        <p class="text-slate-400 mt-2 mb-6">سجّل دخولك لتبدأ المغامرة.</p>
-        <button
-          id="google-signin-btn"
-          class="w-full flex items-center justify-center gap-3 bg-white text-slate-800 font-bold py-3 px-6 rounded-lg hover:bg-slate-200 transition-colors"
-        >
-          <svg class="w-6 h-6" viewBox="0 0 48 48">
-            <path
-              fill="#EA4335"
-              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-            />
-            <path
-              fill="#4285F4"
-              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-            />
-            <path
-              fill="#34A853"
-              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-            />
-            <path fill="none" d="M0 0h48v48H0z" />
-          </svg>
-          تسجيل الدخول باستخدام جوجل
-        </button>
-      </div>
     </div>
 
     <!-- Name Request Modal -->
-    <div
-      id="name-modal"
-      class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-50"
-    >
-      <div
-        class="p-8 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-sm"
-      >
-        <h2 class="text-2xl font-bold text-center mb-2">آخر خطوة!</h2>
-        <p class="text-slate-400 text-center mb-6">
-          ما هو الاسم الذي تود أن نناديك به؟
-        </p>
-        <form id="name-form">
-          <input
-            type="text"
-            id="name-input"
-            class="w-full bg-slate-700 border-2 border-slate-600 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 text-center"
-            placeholder="اكتب اسمك هنا"
-            required
-          />
-          <button
-            type="submit"
-            class="w-full mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors"
-          >
-            حفظ والمتابعة
-          </button>
-        </form>
-      </div>
+    <div id="name-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-50">
+        <div class="p-8 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-sm">
+            <h2 class="text-2xl font-bold text-center mb-2">آخر خطوة!</h2>
+            <p class="text-slate-400 text-center mb-6">ما هو الاسم الذي تود أن نناديك به؟</p>
+            <form id="name-form">
+                <input type="text" id="name-input" class="w-full bg-slate-700 border-2 border-slate-600 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 text-center" placeholder="اكتب اسمك هنا" required>
+                <button type="submit" class="w-full mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">حفظ والمتابعة</button>
+            </form>
+        </div>
     </div>
 
     <!-- Main App Container -->
     <div id="app-container" class="hidden flex h-screen">
-      <!-- Sidebar -->
-      <aside
-        id="sidebar"
-        class="bg-slate-900/80 backdrop-blur-sm border-l border-slate-700/50 text-white w-64 flex-shrink-0 flex-col p-4 hidden md:flex"
-      >
-        <button
-          id="newChatBtn"
-          class="w-full text-right bg-slate-700/50 hover:bg-slate-700 rounded-lg p-3 mb-4 transition-colors flex items-center gap-3 font-semibold"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          محادثة جديدة
-        </button>
-        <div class="flex-grow"></div>
-        <div
-          id="user-profile"
-          class="border-t border-slate-700 pt-4 flex items-center gap-3"
-        ></div>
-      </aside>
-
-      <!-- Main Chat Area -->
-      <main class="flex-1 flex flex-col bg-slate-800/60">
-        <header
-          class="md:hidden flex items-center justify-between p-4 border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm"
-        >
-          <h1
-            class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-fuchsia-500"
-          >
-            اسأل تويست
-          </h1>
-          <button id="menuBtn" class="p-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6h16M4 12h16m-16 6h16"
-              />
-            </svg>
-          </button>
-        </header>
-        <div
-          id="chat-messages"
-          class="chat-messages flex-1 overflow-y-auto p-6 space-y-6"
-        ></div>
-        <div
-          class="p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm border-t border-slate-700/50"
-        >
-          <form id="chat-form" class="relative">
-            <input
-              type="text"
-              id="userInput"
-              class="w-full bg-slate-700 border-2 border-slate-600 rounded-xl py-4 pr-4 pl-14 text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all text-lg"
-              placeholder="اكتب سؤالك هنا..."
-              autocomplete="off"
-            />
-            <button
-              type="submit"
-              id="submitBtn"
-              class="absolute inset-y-0 left-0 flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold w-12 h-12 rounded-lg ml-2 my-auto transition-all transform hover:scale-110 active:scale-100 disabled:bg-slate-500 disabled:cursor-not-allowed disabled:scale-100"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M5 10l7-7m0 0l7 7m-7-7v18"
-                />
-              </svg>
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-slate-900/80 backdrop-blur-sm border-l border-slate-700/50 text-white w-64 flex-shrink-0 flex-col p-4 hidden md:flex">
+            <button id="newChatBtn" class="w-full text-right bg-slate-700/50 hover:bg-slate-700 rounded-lg p-3 mb-4 transition-colors flex items-center gap-3 font-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                محادثة جديدة
             </button>
-          </form>
-        </div>
-      </main>
+            <div class="flex-grow"></div>
+            <div id="user-profile" class="border-t border-slate-700 pt-4 flex items-center gap-3"></div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="flex-1 flex flex-col bg-slate-800/60">
+            <header class="md:hidden flex items-center justify-between p-4 border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm">
+                 <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-fuchsia-500">اسأل تويست</h1>
+                 <button id="menuBtn" class="p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-16 6h16" /></svg>
+                 </button>
+            </header>
+            <div id="chat-messages" class="chat-messages flex-1 overflow-y-auto p-6 space-y-6"></div>
+            <div class="p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm border-t border-slate-700/50">
+                <form id="chat-form" class="relative">
+                    <input type="text" id="userInput" class="w-full bg-slate-700 border-2 border-slate-600 rounded-xl py-4 pr-4 pl-14 text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all text-lg" placeholder="اكتب سؤالك هنا..." autocomplete="off">
+                    <button type="submit" id="submitBtn" class="absolute inset-y-0 left-0 flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold w-12 h-12 rounded-lg ml-2 my-auto transition-all transform hover:scale-110 active:scale-100 disabled:bg-slate-500 disabled:cursor-not-allowed disabled:scale-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                    </button>
+                </form>
+            </div>
+        </main>
     </div>
 
     <script type="module">
-      // Firebase Imports
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-      import {
-        getAuth,
-        onAuthStateChanged,
-        GoogleAuthProvider,
-        signInWithPopup,
-      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-      import {
-        getFirestore,
-        collection,
-        addDoc,
-        serverTimestamp,
-        doc,
-        getDoc,
-        setDoc,
-        query,
-        orderBy,
-        limit,
-        onSnapshot,
-        getDocs,
-      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, setDoc, query, orderBy, limit, onSnapshot, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-      // --- DOM Elements ---
-      const loginOverlay = document.getElementById("login-overlay"),
-        googleSigninBtn = document.getElementById("google-signin-btn"),
-        nameModal = document.getElementById("name-modal"),
-        nameForm = document.getElementById("name-form"),
-        nameInput = document.getElementById("name-input"),
-        appContainer = document.getElementById("app-container"),
-        userProfile = document.getElementById("user-profile"),
-        userInput = document.getElementById("userInput"),
-        chatForm = document.getElementById("chat-form"),
-        submitBtn = document.getElementById("submitBtn"),
-        chatMessages = document.getElementById("chat-messages"),
-        newChatBtn = document.getElementById("newChatBtn"),
-        menuBtn = document.getElementById("menuBtn"),
-        sidebar = document.getElementById("sidebar"),
-        confettiContainer = document.getElementById("confetti-container");
+        // --- DOM Elements ---
+        const loginOverlay = document.getElementById('login-overlay'),
+              googleSigninBtn = document.getElementById('google-signin-btn'),
+              nameModal = document.getElementById('name-modal'),
+              nameForm = document.getElementById('name-form'),
+              nameInput = document.getElementById('name-input'),
+              appContainer = document.getElementById('app-container'),
+              userProfile = document.getElementById('user-profile'),
+              userInput = document.getElementById('userInput'),
+              chatForm = document.getElementById('chat-form'),
+              submitBtn = document.getElementById('submitBtn'),
+              chatMessages = document.getElementById('chat-messages'),
+              newChatBtn = document.getElementById('newChatBtn'),
+              menuBtn = document.getElementById('menuBtn'),
+              sidebar = document.getElementById('sidebar'),
+              confettiContainer = document.getElementById('confetti-container');
 
-      // --- Firebase & State ---
-      let db,
-        auth,
-        currentUserData = null,
-        currentChatId = null,
-        unsubscribeMessages = null;
-      const firebaseConfig = {
-        apiKey: "AIzaSyDaCWkD_0cuGafWJAiDAFtvPAmst4PX99U",
-        authDomain: "ask-twist.firebaseapp.com",
-        projectId: "ask-twist",
-        storageBucket: "ask-twist.appspot.com",
-        messagingSenderId: "342736773610",
-        appId: "1:342736773610:web:da6e5a4b77afeb1b5a9293",
-      };
-      try {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-      } catch (e) {
-        console.error("Firebase initialization failed.", e);
-      }
-      const chaoticResponses = [
-        "ليه لأ؟ بس لو لابس شبشب أبو ضبّة.",
-        "أيوه، بس خد رأي الحيط الأول.",
-        "بصراحة؟ لا. بس روح جرب وشوف.",
-        "أنا بوت، مش المفروض أقرر مصيرك يا زميلي.",
-        "آه، بس حاول تطبخ ضميرك الأول 🍳",
-        "اسأل كرسيك، شكله عنده خبرة أكتر مني.",
-        "الكون بيقولك 'يا عم كبر مخك'.",
-        "اعملها، بس متنساش تصور عشان الضحك.",
-        "فكرة ممتازة، خصوصاً لو هتندم عليها بعدين.",
-        "النجوم بتقول استنى شوية... أو يمكن دي لمبة محروقة.",
-      ];
-
-      // --- Auth Logic ---
-      onAuthStateChanged(auth, async user => {
-        if (user) {
-          const userRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            currentUserData = userSnap.data();
-            await loadOrCreateChat();
-            showApp();
-          } else {
-            loginOverlay.classList.add("hidden");
-            nameModal.classList.remove("hidden");
-          }
-        } else {
-          showLogin();
-        }
-      });
-
-      googleSigninBtn.addEventListener("click", () => {
-        signInWithPopup(auth, new GoogleAuthProvider()).catch(err =>
-          console.error("Sign-in error", err)
-        );
-      });
-
-      nameForm.addEventListener("submit", async e => {
-        e.preventDefault();
-        const user = auth.currentUser;
-        const displayName = nameInput.value.trim();
-        if (user && displayName) {
-          const newUserProfile = {
-            uid: user.uid,
-            displayName,
-            email: user.email,
-            photoURL: user.photoURL,
-          };
-          await setDoc(doc(db, "users", user.uid), newUserProfile);
-          currentUserData = newUserProfile;
-          await loadOrCreateChat();
-          showApp();
-        }
-      });
-
-      function showLogin() {
-        loginOverlay.classList.remove("hidden");
-        appContainer.classList.add("hidden");
-        nameModal.classList.add("hidden");
-      }
-
-      function showApp() {
-        loginOverlay.classList.add("hidden");
-        nameModal.classList.add("hidden");
-        appContainer.classList.remove("hidden");
-        updateUserProfileUI();
-      }
-
-      function updateUserProfileUI() {
-        if (!currentUserData) return;
-        userProfile.innerHTML = `<img src="${currentUserData.photoURL}" alt="User Avatar" class="w-10 h-10 rounded-full border-2 border-sky-500"><span class="font-semibold">${currentUserData.displayName}</span>`;
-      }
-
-      // --- Chat Management ---
-      async function loadOrCreateChat() {
-        const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
-        const q = query(chatsRef, orderBy("createdAt", "desc"), limit(1));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          await createNewChat(true); // Create first chat with welcome message
-        } else {
-          currentChatId = snapshot.docs[0].id;
-          listenToMessages(currentChatId);
-        }
-      }
-
-      async function createNewChat(withWelcome = false) {
-        const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
-        const newChatRef = await addDoc(chatsRef, {
-          createdAt: serverTimestamp(),
-          title: "محادثة جديدة",
-        });
-        currentChatId = newChatRef.id;
-        listenToMessages(currentChatId);
-        if (withWelcome) {
-          await addWelcomeMessage();
-        }
-      }
-
-      function listenToMessages(chatId) {
-        if (unsubscribeMessages) unsubscribeMessages(); // Stop listening to old chat
-        chatMessages.innerHTML = "";
-        const messagesRef = collection(
-          db,
-          `users/${auth.currentUser.uid}/chats/${chatId}/messages`
-        );
-        const q = query(messagesRef, orderBy("timestamp"));
-        unsubscribeMessages = onSnapshot(q, snapshot => {
-          chatMessages.innerHTML = "";
-          snapshot.forEach(doc =>
-            addMessageToUI(doc.data().text, doc.data().sender)
-          );
-        });
-      }
-
-      async function addWelcomeMessage() {
-        const welcomeText =
-          "أهلاً! أنا تويست وجاي عشان اخترلك the best. اسألني عن أي حاجة وأنا أقولك الوقت ده مناسب ولا لأ.";
-        await saveMessage(welcomeText, "bot");
-      }
-
-      // --- Message Handling ---
-      function scrollToBottom() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      }
-
-      function addMessageToUI(text, sender) {
-        const messageElement = document.createElement("div");
-        if (sender === "user") {
-          messageElement.className = "flex items-start gap-3 justify-end";
-          messageElement.innerHTML = `<div class="bg-sky-600 p-3 rounded-xl max-w-lg text-white shadow-md"><p>${text}</p></div><img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar">`;
-        } else {
-          messageElement.className = "flex items-start gap-3";
-          messageElement.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div><div class="bg-slate-700 p-3 rounded-xl max-w-lg shadow-md"><p class="typewriter">${text}</p></div>`;
-        }
-        chatMessages.appendChild(messageElement);
-        scrollToBottom();
-      }
-
-      function addLoadingIndicator() {
-        const loadingElement = document.createElement("div");
-        loadingElement.id = "loading-indicator";
-        loadingElement.className = "flex items-start gap-3";
-        loadingElement.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 animate-pulse">T</div><div class="bg-slate-700 p-4 rounded-xl"><div class="flex items-center space-x-2 space-x-reverse"><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span></div></div>`;
-        chatMessages.appendChild(loadingElement);
-        scrollToBottom();
-      }
-
-      function removeLoadingIndicator() {
-        document.getElementById("loading-indicator")?.remove();
-      }
-
-      async function saveMessage(text, sender) {
-        const messagesRef = collection(
-          db,
-          `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`
-        );
-        await addDoc(messagesRef, {
-          text,
-          sender,
-          timestamp: serverTimestamp(),
-        });
-      }
-
-      async function getTwistResponse(text) {
-        if (text.includes("اكلمها")) {
-          triggerConfetti();
-          return "يا قلبي! روح كلمها فوراً، الحياة قصيرة والفرص مبتستناش!";
-        }
-        const isWise = Math.random() < 0.4;
-        if (isWise) return getGeminiResponseWithContext(text);
-        return chaoticResponses[
-          Math.floor(Math.random() * chaoticResponses.length)
-        ];
-      }
-
-      async function getGeminiResponseWithContext(prompt) {
-        const messagesRef = collection(
-          db,
-          `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`
-        );
-        const q = query(messagesRef, orderBy("timestamp", "desc"), limit(4));
-        const snapshot = await getDocs(q);
-        const history = snapshot.docs.reverse().map(doc => ({
-          role: doc.data().sender === "user" ? "user" : "model",
-          parts: [{ text: doc.data().text }],
-        }));
-
-        const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-        const fullPrompt = `أنت بوت اسمه "تويست"، ذكي ومرح وساخر. أجب على آخر سؤال للمستخدم مع الأخذ في الاعتبار سياق المحادثة السابقة. ردك يجب أن يكون قصيراً، غير متوقع، وباللغة العربية فقط.`;
-
-        // Add the system instruction and the new user prompt to the history
-        const contents = [
-          ...history,
-          { role: "user", parts: [{ text: prompt }] },
-        ];
-        // Prepend the system prompt for better context
-        contents.unshift({ role: "user", parts: [{ text: fullPrompt }] });
-        contents.push({
-          role: "model",
-          parts: [{ text: "بالتأكيد، سأجيب الآن:" }],
-        });
-
-        const payload = { contents };
-
+        // --- Firebase & State ---
+        let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null;
+        const firebaseConfig = {
+          apiKey: "AIzaSyDaCWkD_0cuGafWJAiDAFtvPAmst4PX99U",
+          authDomain: "ask-twist.firebaseapp.com",
+          projectId: "ask-twist",
+          storageBucket: "ask-twist.appspot.com",
+          messagingSenderId: "342736773610",
+          appId: "1:342736773610:web:da6e5a4b77afeb1b5a9293"
+        };
         try {
-          const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) throw new Error(`API error: ${response.status}`);
-          const result = await response.json();
-          return (
-            result.candidates?.[0]?.content?.parts?.[0]?.text.trim() ||
-            chaoticResponses[0]
-          );
-        } catch (error) {
-          console.error("Gemini API error:", error);
-          return chaoticResponses[
-            Math.floor(Math.random() * chaoticResponses.length)
-          ];
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (e) { console.error("Firebase initialization failed.", e); }
+        const chaoticResponses = ["ليه لأ؟ بس لو لابس شبشب أبو ضبّة.", "أيوه، بس خد رأي الحيط الأول.", "بصراحة؟ لا. بس روح جرب وشوف.", "أنا بوت، مش المفروض أقرر مصيرك يا زميلي.", "آه، بس حاول تطبخ ضميرك الأول 🍳", "اسأل كرسيك، شكله عنده خبرة أكتر مني.", "الكون بيقولك 'يا عم كبر مخك'.", "اعملها، بس متنساش تصور عشان الضحك.", "فكرة ممتازة، خصوصاً لو هتندم عليها بعدين.", "النجوم بتقول استنى شوية... أو يمكن دي لمبة محروقة."];
+
+        // --- Auth Logic ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    currentUserData = userSnap.data();
+                    showApp();
+                    await loadOrCreateChat();
+                } else {
+                    loginOverlay.classList.add('hidden');
+                    nameModal.classList.remove('hidden');
+                }
+            } else {
+                showLogin();
+            }
+        });
+
+        googleSigninBtn.addEventListener('click', () => {
+            signInWithPopup(auth, new GoogleAuthProvider()).catch(err => console.error("Sign-in error", err));
+        });
+
+        nameForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            const displayName = nameInput.value.trim();
+            if (user && displayName) {
+                const newUserProfile = { 
+                    uid: user.uid, 
+                    displayName, 
+                    email: user.email, 
+                    photoURL: user.photoURL,
+                    aiNotes: "مستخدم جديد، يبدو فضولياً." // Initial AI note
+                };
+                await setDoc(doc(db, "users", user.uid), newUserProfile);
+                currentUserData = newUserProfile;
+                showApp();
+                await loadOrCreateChat(); // Load chat right after creating profile
+            }
+        });
+
+        function showLogin() {
+            loginOverlay.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+            nameModal.classList.add('hidden');
         }
-      }
 
-      function triggerConfetti() {
-        for (let i = 0; i < 50; i++) {
-          const confetti = document.createElement("div");
-          confetti.className = "confetti";
-          const colors = [
-            "#0ea5e9",
-            "#a855f7",
-            "#d946ef",
-            "#f59e0b",
-            "#22c55e",
-          ];
-          confetti.style.backgroundColor =
-            colors[Math.floor(Math.random() * colors.length)];
-          confetti.style.left = `${Math.random() * 100}vw`;
-          confetti.style.animationDuration = `${Math.random() * 2 + 3}s`;
-          confetti.style.animationDelay = `${Math.random() * 1}s`;
-          confettiContainer.appendChild(confetti);
-          setTimeout(() => confetti.remove(), 5000);
+        function showApp() {
+            loginOverlay.classList.add('hidden');
+            nameModal.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            updateUserProfileUI();
         }
-      }
+        
+        function updateUserProfileUI() {
+            if (!currentUserData) return;
+            userProfile.innerHTML = `<img src="${currentUserData.photoURL}" alt="User Avatar" class="w-10 h-10 rounded-full border-2 border-sky-500"><span class="font-semibold">${currentUserData.displayName}</span>`;
+        }
 
-      async function handleSubmit(event) {
-        event.preventDefault();
-        const text = userInput.value.trim();
-        if (!text || !currentChatId) return;
-        submitBtn.disabled = true;
-        userInput.value = "";
+        // --- Chat Management ---
+        async function loadOrCreateChat() {
+            const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
+            const q = query(chatsRef, orderBy("createdAt", "desc"), limit(1));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                await createNewChat(true); // Create first chat with welcome message
+            } else {
+                currentChatId = snapshot.docs[0].id;
+                listenToMessages(currentChatId);
+            }
+        }
 
-        await saveMessage(text, "user");
+        async function createNewChat(withWelcome = false) {
+            if (unsubscribeMessages) unsubscribeMessages();
+            chatMessages.innerHTML = '';
+            const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
+            const newChatRef = await addDoc(chatsRef, { createdAt: serverTimestamp(), title: "محادثة جديدة" });
+            currentChatId = newChatRef.id;
+            listenToMessages(currentChatId);
+            if (withWelcome) {
+                await addWelcomeMessage();
+            }
+        }
 
-        addLoadingIndicator();
-        const responseText = await getTwistResponse(text);
-        removeLoadingIndicator();
+        function listenToMessages(chatId) {
+            if (unsubscribeMessages) unsubscribeMessages(); // Stop listening to old chat
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp"));
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                chatMessages.innerHTML = '';
+                snapshot.forEach(doc => addMessageToUI(doc.data().text, doc.data().sender));
+            });
+        }
+        
+        async function addWelcomeMessage() {
+            const welcomeText = "أهلاً! أنا تويست وجاي عشان اخترلك the best. اسألني عن أي حاجة وأنا أقولك الوقت ده مناسب ولا لأ.";
+            await saveMessage(welcomeText, 'bot');
+        }
+        
+        // --- Message Handling ---
+        function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
 
-        await saveMessage(responseText, "bot");
+        function addMessageToUI(text, sender) {
+            const messageElement = document.createElement('div');
+            if (sender === 'user') {
+                messageElement.className = 'flex items-start gap-3 justify-end';
+                messageElement.innerHTML = `<div class="bg-sky-600 p-3 rounded-xl max-w-lg text-white shadow-md"><p>${text}</p></div><img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar">`;
+            } else {
+                messageElement.className = 'flex items-start gap-3';
+                messageElement.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div><div class="bg-slate-700 p-3 rounded-xl max-w-lg shadow-md"><p class="typewriter">${text}</p></div>`;
+            }
+            chatMessages.appendChild(messageElement);
+            scrollToBottom();
+        }
 
-        submitBtn.disabled = false;
-        userInput.focus();
-      }
+        function addLoadingIndicator() {
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'loading-indicator';
+            loadingElement.className = 'flex items-start gap-3';
+            loadingElement.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 animate-pulse">T</div><div class="bg-slate-700 p-4 rounded-xl"><div class="flex items-center space-x-2 space-x-reverse"><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span></div></div>`;
+            chatMessages.appendChild(loadingElement);
+            scrollToBottom();
+        }
 
-      // --- Event Listeners ---
-      chatForm.addEventListener("submit", handleSubmit);
-      newChatBtn.addEventListener("click", async () => {
-        chatMessages.innerHTML = "";
-        await createNewChat(true);
-        if (window.innerWidth < 768) sidebar.classList.add("hidden");
-      });
-      menuBtn.addEventListener("click", () =>
-        sidebar.classList.toggle("hidden")
-      );
+        function removeLoadingIndicator() { document.getElementById('loading-indicator')?.remove(); }
+
+        async function saveMessage(text, sender) {
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            await addDoc(messagesRef, { text, sender, timestamp: serverTimestamp() });
+        }
+
+        async function getTwistResponse(text) {
+            if (text.includes("اكلمها")) {
+                triggerConfetti();
+                return "يا قلبي! روح كلمها فوراً، الحياة قصيرة والفرص مبتستناش!";
+            }
+            const isWise = Math.random() < 0.5; // Increased chance for AI response
+            if (isWise) return getGeminiResponseWithContext(text);
+            return chaoticResponses[Math.floor(Math.random() * chaoticResponses.length)];
+        }
+
+        async function getGeminiResponseWithContext(prompt) {
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp", "desc"), limit(4));
+            const snapshot = await getDocs(q);
+            const history = snapshot.docs.reverse().map(doc => ({
+                role: doc.data().sender === 'user' ? 'user' : 'model',
+                parts: [{ text: doc.data().text }]
+            }));
+            
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const systemInstruction = `أنت بوت اسمه "تويست"، ذكي ومرح وساخر. أجب على آخر سؤال للمستخدم مع الأخذ في الاعتبار سياق المحادثة السابقة وملاحظاتك عن شخصية المستخدم. ردك يجب أن يكون قصيراً، غير متوقع، وباللغة العربية فقط. ملاحظاتك الحالية عن المستخدم: "${currentUserData.aiNotes}"`;
+            
+            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "فهمت. سأحلل شخصيته وأرد بناءً على ذلك." }] }, ...history, { role: 'user', parts: [{ text: prompt }] } ];
+            const payload = { contents };
+            
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                const result = await response.json();
+                const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || chaoticResponses[0];
+                
+                // Fire and forget: update user notes in the background
+                updateUserAINotes(prompt, aiResponse);
+
+                return aiResponse;
+            } catch (error) {
+                console.error("Gemini API error:", error);
+                return chaoticResponses[Math.floor(Math.random() * chaoticResponses.length)];
+            }
+        }
+        
+        async function updateUserAINotes(lastQuestion, lastAnswer) {
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const prompt = `بناءً على الملاحظات السابقة عن المستخدم وسؤاله الأخير، قم بتحديث الملاحظات في جملة واحدة قصيرة. لا تكرر الملاحظات.
+            الملاحظات السابقة: "${currentUserData.aiNotes}"
+            سؤاله الأخير: "${lastQuestion}"
+            إجابتي عليه: "${lastAnswer}"
+            الملاحظات المحدثة (جملة واحدة فقط):`;
+            
+            const payload = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                const newNotes = result.candidates?.[0]?.content?.parts?.[0]?.text.trim();
+                if (newNotes) {
+                    const userRef = doc(db, "users", auth.currentUser.uid);
+                    await updateDoc(userRef, { aiNotes: newNotes });
+                    currentUserData.aiNotes = newNotes; // Update local state
+                }
+            } catch(e) {
+                console.error("Could not update AI notes:", e);
+            }
+        }
+
+        function triggerConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                const colors = ['#0ea5e9', '#a855f7', '#d946ef', '#f59e0b', '#22c55e'];
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.animationDuration = `${Math.random() * 2 + 3}s`;
+                confetti.style.animationDelay = `${Math.random() * 1}s`;
+                confettiContainer.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 5000);
+            }
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            const text = userInput.value.trim();
+            if (!text || !currentChatId) return;
+            submitBtn.disabled = true;
+            userInput.value = '';
+            
+            await saveMessage(text, 'user');
+            
+            addLoadingIndicator();
+            const responseText = await getTwistResponse(text);
+            removeLoadingIndicator();
+            
+            await saveMessage(responseText, 'bot');
+            
+            submitBtn.disabled = false;
+            userInput.focus();
+        }
+
+        // --- Event Listeners ---
+        chatForm.addEventListener('submit', handleSubmit);
+        newChatBtn.addEventListener('click', async () => {
+            await createNewChat(true);
+            if (window.innerWidth < 768) sidebar.classList.add('hidden');
+        });
+        menuBtn.addEventListener('click', () => sidebar.classList.toggle('hidden'));
     </script>
-  </body>
+</body>
 </html>
