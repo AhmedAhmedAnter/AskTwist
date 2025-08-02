@@ -21,21 +21,12 @@
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-        /* Custom scrollbar for a cleaner look */
         .chat-messages::-webkit-scrollbar, .chat-list::-webkit-scrollbar { width: 8px; }
         .chat-messages::-webkit-scrollbar-track, .chat-list::-webkit-scrollbar-track { background: #0f172a; }
         .chat-messages::-webkit-scrollbar-thumb, .chat-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         .chat-messages::-webkit-scrollbar-thumb:hover, .chat-list::-webkit-scrollbar-thumb:hover { background: #475569; }
-        
-        /* Blinking cursor for typing animation */
-        .blinking-cursor {
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink {
-            from, to { color: transparent; }
-            50% { color: #67e8f9; } /* cyan-300 */
-        }
-        
+        .blinking-cursor { animation: blink 1s step-end infinite; }
+        @keyframes blink { from, to { color: transparent; } 50% { color: #67e8f9; } }
         .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 100; }
         .confetti { position: absolute; width: 10px; height: 10px; opacity: 0.9; animation: fall 3s linear forwards; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
@@ -69,6 +60,18 @@
             </form>
         </div>
     </div>
+    
+    <!-- Share Card Modal -->
+    <div id="share-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">شارك بطاقتك</h2>
+            <canvas id="share-canvas" width="1000" height="1000" class="w-full h-auto rounded-lg"></canvas>
+            <div class="flex gap-4 mt-4">
+                <a id="download-btn" href="#" download="twist-reply.png" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">تنزيل</a>
+                <button id="close-share-modal" class="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 rounded-lg transition-colors">إغلاق</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Main App Container -->
     <div id="app-container" class="hidden flex h-screen">
@@ -78,9 +81,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                 محادثة جديدة
             </button>
-            <div id="chat-list" class="flex-grow overflow-y-auto space-y-2 pr-2">
-                <!-- Chat history will be loaded here -->
-            </div>
+            <div id="chat-list" class="flex-grow overflow-y-auto space-y-2 pr-2"></div>
             <div id="user-profile" class="border-t border-slate-700 pt-4 flex items-center gap-3"></div>
         </aside>
 
@@ -116,6 +117,10 @@
               nameModal = document.getElementById('name-modal'),
               nameForm = document.getElementById('name-form'),
               nameInput = document.getElementById('name-input'),
+              shareModal = document.getElementById('share-modal'),
+              shareCanvas = document.getElementById('share-canvas'),
+              downloadBtn = document.getElementById('download-btn'),
+              closeShareModalBtn = document.getElementById('close-share-modal'),
               appContainer = document.getElementById('app-container'),
               userProfile = document.getElementById('user-profile'),
               chatList = document.getElementById('chat-list'),
@@ -143,12 +148,11 @@
             db = getFirestore(app);
             auth = getAuth(app);
         } catch (e) { console.error("Firebase initialization failed.", e); }
-        const chaoticResponses = ["ليه لأ؟ بس لو لابس شبشب أبو ضبّة.", "أيوه، بس خد رأي الحيط الأول.", "بصراحة؟ لا. بس روح جرب وشوف.", "أنا بوت، مش المفروض أقرر مصيرك يا زميلي.", "آه، بس حاول تطبخ ضميرك الأول 🍳", "اسأل كرسيك، شكله عنده خبرة أكتر مني.", "الكون بيقولك 'يا عم كبر مخك'.", "اعملها، بس متنساش تصور عشان الضحك.", "فكرة ممتازة، خصوصاً لو هتندم عليها بعدين.", "النجوم بتقول استنى شوية... أو يمكن دي لمبة محروقة."];
         
         // --- Sound Effects ---
         const sendSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).toDestination();
         const receiveSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
-
+        const amplifySynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination();
 
         // --- Auth Logic ---
         onAuthStateChanged(auth, async (user) => {
@@ -317,7 +321,7 @@
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added") {
                         const msgData = change.doc.data();
-                        addMessageToUI(msgData.text, msgData.sender);
+                        addMessageToUI(msgData.text, msgData.sender, change.doc.id);
                     }
                 });
             });
@@ -331,24 +335,29 @@
         // --- Message Handling ---
         function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
 
-        function addMessageToUI(text, sender) {
-            const messageElement = document.createElement('div');
+        function addMessageToUI(text, sender, messageId) {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-wrapper';
+
             if (sender === 'user') {
-                messageElement.className = 'flex items-start gap-3 justify-end';
-                messageElement.innerHTML = `<div class="bg-sky-600 p-3 rounded-xl max-w-lg text-white shadow-md"><p>${text}</p></div><img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar">`;
+                messageContainer.innerHTML = `<div class="flex items-start gap-3 justify-end"><div class="bg-sky-600 p-3 rounded-xl max-w-lg text-white shadow-md"><p>${text}</p></div><img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar"></div>`;
             } else {
-                const botMessageContainer = document.createElement('div');
-                botMessageContainer.className = 'bg-slate-700 p-3 rounded-xl max-w-lg shadow-md';
-                const p = document.createElement('p');
-                botMessageContainer.appendChild(p);
-                
-                messageElement.className = 'flex items-start gap-3';
-                messageElement.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div>`;
-                messageElement.appendChild(botMessageContainer);
-                
-                animateTyping(p, text);
+                messageContainer.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div>
+                        <div class="bg-slate-700 p-3 rounded-xl max-w-lg shadow-md">
+                            <p class="bot-text-content"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mr-12 mt-2">
+                        <button class="play-audio-btn text-slate-400 hover:text-sky-400 transition-colors" data-text="${text}" title="استمع للرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg></button>
+                        <button class="share-card-btn text-slate-400 hover:text-sky-400 transition-colors" data-message-id="${messageId}" title="مشاركة الرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg></button>
+                        <button class="amplify-btn text-slate-400 hover:text-sky-400 transition-colors" data-message-id="${messageId}" title="زوّدها يا تويست"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 011-1h.5a1.5 1.5 0 000-3H6a1 1 0 01-1-1V8a1 1 0 011-1h3a1 1 0 001-1v-.5z" /></svg></button>
+                    </div>
+                `;
+                animateTyping(messageContainer.querySelector('.bot-text-content'), text);
             }
-            chatMessages.appendChild(messageElement);
+            chatMessages.appendChild(messageContainer);
             scrollToBottom();
         }
         
@@ -387,7 +396,7 @@
             if (!currentChatId) return;
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
             const messageData = { text, sender, timestamp: serverTimestamp() };
-            await addDoc(messagesRef, messageData);
+            return await addDoc(messagesRef, messageData);
         }
 
         async function getTwistResponse(text) {
@@ -395,15 +404,14 @@
                 triggerConfetti();
                 return "يا قلبي! روح كلمها فوراً، الحياة قصيرة والفرص مبتستناش!";
             }
-            // Always use the AI for a contextual response
             return getGeminiResponseWithContext(text);
         }
 
-        async function getGeminiResponseWithContext(prompt) {
+        async function getGeminiResponseWithContext(prompt, historyOverride = null) {
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
             const q = query(messagesRef, orderBy("timestamp", "desc"), limit(4));
             const snapshot = await getDocs(q);
-            const history = snapshot.docs.reverse().map(doc => ({
+            const history = historyOverride || snapshot.docs.reverse().map(doc => ({
                 role: doc.data().sender === 'user' ? 'user' : 'model',
                 parts: [{ text: doc.data().text }]
             }));
@@ -412,19 +420,25 @@
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             const systemInstruction = `أنت بوت اسمه "تويست"، ذكي ومرح وساخر. أجب على آخر سؤال للمستخدم مع الأخذ في الاعتبار سياق المحادثة السابقة وملاحظاتك عن شخصية المستخدم. ردك يجب أن يكون قصيراً، غير متوقع، وباللغة العربية فقط. ملاحظاتك الحالية عن المستخدم: "${currentUserData.aiNotes}"`;
             
-            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "فهمت. سأحلل شخصيته وأرد بناءً على ذلك." }] }, ...history, { role: 'user', parts: [{ text: prompt }] } ];
+            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "فهمت. سأحلل شخصيته وأرد بناءً على ذلك." }] }, ...history ];
+            if (!historyOverride) {
+                contents.push({ role: 'user', parts: [{ text: prompt }] });
+            }
+
             const payload = { contents };
             
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 const result = await response.json();
-                const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || chaoticResponses[0];
-                updateUserAINotes(prompt, aiResponse);
+                const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "عفواً، حدث خطأ ما.";
+                if (!historyOverride) {
+                    updateUserAINotes(prompt, aiResponse);
+                }
                 return aiResponse;
             } catch (error) {
                 console.error("Gemini API error:", error);
-                return chaoticResponses[Math.floor(Math.random() * chaoticResponses.length)];
+                return "يبدو أن عقلي الإلكتروني يعاني من صداع الآن، حاول مرة أخرى.";
             }
         }
         
@@ -487,15 +501,14 @@
             submitBtn.disabled = true;
             userInput.value = '';
             
-            // Check if this is the first user message in a new chat to generate title
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
             const messagesSnap = await getDocs(messagesRef);
-            const isFirstMessage = messagesSnap.docs.filter(doc => doc.data().sender === 'user').length === 0;
+            const isFirstUserMessage = messagesSnap.docs.filter(doc => doc.data().sender === 'user').length === 0;
 
             await saveMessage(text, 'user');
-            sendSynth.triggerAttackRelease("C5", "16n");
+            sendSynth.triggerAttackRelease("C5", "8n");
 
-            if (isFirstMessage) {
+            if (isFirstUserMessage) {
                 await generateChatTitle(text);
             }
             
@@ -504,10 +517,168 @@
             removeLoadingIndicator();
             
             await saveMessage(responseText, 'bot');
-            receiveSynth.triggerAttackRelease("G5", "16n", Tone.now() + 0.1);
+            receiveSynth.triggerAttackRelease("G5", "8n", Tone.now() + 0.1);
             
             submitBtn.disabled = false;
             userInput.focus();
+        }
+
+        // --- New Feature Handlers ---
+        chatMessages.addEventListener('click', async (e) => {
+            const playBtn = e.target.closest('.play-audio-btn');
+            const shareBtn = e.target.closest('.share-card-btn');
+            const amplifyBtn = e.target.closest('.amplify-btn');
+
+            if (playBtn) {
+                playBtn.disabled = true;
+                const textToSpeak = playBtn.dataset.text;
+                await playAudio(textToSpeak);
+                playBtn.disabled = false;
+            }
+            if (shareBtn) {
+                const messageId = shareBtn.dataset.messageId;
+                await generateShareCard(messageId);
+            }
+            if (amplifyBtn) {
+                amplifyBtn.disabled = true;
+                const messageId = amplifyBtn.dataset.messageId;
+                await amplifyResponse(messageId);
+                amplifyBtn.disabled = false;
+            }
+        });
+
+        async function playAudio(text) {
+            const apiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text }] }],
+                generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Rasalgethi" } } } },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                const audioData = result.candidates[0].content.parts[0].inlineData.data;
+                const mimeType = result.candidates[0].content.parts[0].inlineData.mimeType;
+                const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+
+                const pcmData = Uint8Array.from(atob(audioData), c => c.charCodeAt(0)).buffer;
+                const pcm16 = new Int16Array(pcmData);
+                const wavBlob = pcmToWav(pcm16, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                new Audio(audioUrl).play();
+            } catch (error) {
+                console.error("TTS Error:", error);
+            }
+        }
+        
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const blockAlign = (numChannels * bitsPerSample) / 8;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcmData.length * (bitsPerSample / 8);
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+            function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } }
+            writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true); view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data'); view.setUint32(40, dataSize, true);
+            for (let i = 0; i < pcmData.length; i++) { view.setInt16(44 + i * 2, pcmData[i], true); }
+            return new Blob([view], { type: 'audio/wav' });
+        }
+        
+        async function generateShareCard(botMessageId) {
+            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
+            const botMsgSnap = await getDoc(botMsgRef);
+            if (!botMsgSnap.exists()) return;
+            const botText = botMsgSnap.data().text;
+
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp", "desc"));
+            const snapshot = await getDocs(q);
+            let userText = "سؤال...";
+            let found = false;
+            for (const doc of snapshot.docs) {
+                if (doc.id === botMessageId) found = true;
+                if (found && doc.data().sender === 'user') {
+                    userText = doc.data().text;
+                    break;
+                }
+            }
+
+            const ctx = shareCanvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 1000, 1000);
+            gradient.addColorStop(0, '#020617');
+            gradient.addColorStop(1, '#4a044e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1000, 1000);
+            
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillStyle = '#cbd5e1'; // slate-300
+            ctx.font = 'bold 50px Cairo';
+            wrapText(ctx, `أنت سألت: "${userText}"`, 500, 200, 900, 60);
+
+            ctx.fillStyle = '#67e8f9'; // cyan-300
+            ctx.font = 'bold 70px Cairo';
+            wrapText(ctx, `تويست أجاب: "${botText}"`, 500, 500, 900, 80);
+            
+            ctx.fillStyle = '#94a3b8'; // slate-400
+            ctx.font = '40px Cairo';
+            ctx.fillText('asstwist.web.app', 500, 900);
+
+            downloadBtn.href = shareCanvas.toDataURL('image/png');
+            shareModal.classList.remove('hidden');
+        }
+        
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = context.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    context.fillText(line, x, y);
+                    line = words[n] + ' ';
+                    y += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            context.fillText(line, x, y);
+        }
+
+        async function amplifyResponse(botMessageId) {
+            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
+            const botMsgSnap = await getDoc(botMsgRef);
+            if (!botMsgSnap.exists()) return;
+            const botText = botMsgSnap.data().text;
+
+            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
+            const q = query(messagesRef, orderBy("timestamp", "desc"));
+            const snapshot = await getDocs(q);
+            let userText = "";
+            let found = false;
+            for (const doc of snapshot.docs) {
+                if (doc.id === botMessageId) found = true;
+                if (found && doc.data().sender === 'user') {
+                    userText = doc.data().text;
+                    break;
+                }
+            }
+            
+            addLoadingIndicator();
+            const amplifyPrompt = `لقد قدمت الإجابة التالية: "${botText}" على سؤال المستخدم: "${userText}". الآن، أعد صياغة إجابتك لتكون أكثر غرابة وسخرية وعمقاً. فاجئني.`;
+            const amplifiedResponse = await getGeminiResponseWithContext(amplifyPrompt, [{ role: 'user', parts: [{ text: amplifyPrompt }] }]);
+            removeLoadingIndicator();
+            
+            await saveMessage(amplifiedResponse, 'bot');
+            amplifySynth.triggerAttackRelease("C4", "8n");
         }
 
         // --- Event Listeners ---
@@ -517,6 +688,7 @@
             if (window.innerWidth < 768) sidebar.classList.add('hidden');
         });
         menuBtn.addEventListener('click', () => sidebar.classList.toggle('hidden'));
+        closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
     </script>
 </body>
 </html>
