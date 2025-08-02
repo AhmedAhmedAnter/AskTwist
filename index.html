@@ -21,18 +21,19 @@
             100% { background-position: 0% 50%; }
         }
         /* Custom scrollbar for a cleaner look */
-        .chat-messages::-webkit-scrollbar { width: 8px; }
-        .chat-messages::-webkit-scrollbar-track { background: #0f172a; }
-        .chat-messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .chat-messages::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .chat-messages::-webkit-scrollbar, .chat-list::-webkit-scrollbar { width: 8px; }
+        .chat-messages::-webkit-scrollbar-track, .chat-list::-webkit-scrollbar-track { background: #0f172a; }
+        .chat-messages::-webkit-scrollbar-thumb, .chat-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb:hover, .chat-list::-webkit-scrollbar-thumb:hover { background: #475569; }
         
-        .typewriter {
-            overflow: hidden;
-            white-space: pre-wrap;
-            animation: typing 1.5s steps(40, end);
-            width: 100%;
+        /* Blinking cursor for typing animation */
+        .blinking-cursor {
+            animation: blink 1s step-end infinite;
         }
-        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink {
+            from, to { color: transparent; }
+            50% { color: #67e8f9; } /* cyan-300 */
+        }
         
         .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 100; }
         .confetti { position: absolute; width: 10px; height: 10px; opacity: 0.9; animation: fall 3s linear forwards; }
@@ -76,7 +77,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                 محادثة جديدة
             </button>
-            <div class="flex-grow"></div>
+            <div id="chat-list" class="flex-grow overflow-y-auto space-y-2 pr-2">
+                <!-- Chat history will be loaded here -->
+            </div>
             <div id="user-profile" class="border-t border-slate-700 pt-4 flex items-center gap-3"></div>
         </aside>
 
@@ -103,7 +106,7 @@
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, setDoc, query, orderBy, limit, onSnapshot, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DOM Elements ---
@@ -114,6 +117,7 @@
               nameInput = document.getElementById('name-input'),
               appContainer = document.getElementById('app-container'),
               userProfile = document.getElementById('user-profile'),
+              chatList = document.getElementById('chat-list'),
               userInput = document.getElementById('userInput'),
               chatForm = document.getElementById('chat-form'),
               submitBtn = document.getElementById('submitBtn'),
@@ -124,7 +128,7 @@
               confettiContainer = document.getElementById('confetti-container');
 
         // --- Firebase & State ---
-        let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null;
+        let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null, unsubscribeChats = null;
         const firebaseConfig = {
           apiKey: "AIzaSyDaCWkD_0cuGafWJAiDAFtvPAmst4PX99U",
           authDomain: "ask-twist.firebaseapp.com",
@@ -142,13 +146,15 @@
 
         // --- Auth Logic ---
         onAuthStateChanged(auth, async (user) => {
+            if (unsubscribeChats) unsubscribeChats();
+            if (unsubscribeMessages) unsubscribeMessages();
             if (user) {
                 const userRef = doc(db, "users", user.uid);
                 const userSnap = await getDoc(userRef);
                 if (userSnap.exists()) {
                     currentUserData = userSnap.data();
                     showApp();
-                    await loadOrCreateChat();
+                    listenToUserChats();
                 } else {
                     loginOverlay.classList.add('hidden');
                     nameModal.classList.remove('hidden');
@@ -172,12 +178,12 @@
                     displayName, 
                     email: user.email, 
                     photoURL: user.photoURL,
-                    aiNotes: "مستخدم جديد، يبدو فضولياً." // Initial AI note
+                    aiNotes: "مستخدم جديد، يبدو فضولياً."
                 };
                 await setDoc(doc(db, "users", user.uid), newUserProfile);
                 currentUserData = newUserProfile;
                 showApp();
-                await loadOrCreateChat(); // Load chat right after creating profile
+                listenToUserChats();
             }
         });
 
@@ -196,41 +202,88 @@
         
         function updateUserProfileUI() {
             if (!currentUserData) return;
-            userProfile.innerHTML = `<img src="${currentUserData.photoURL}" alt="User Avatar" class="w-10 h-10 rounded-full border-2 border-sky-500"><span class="font-semibold">${currentUserData.displayName}</span>`;
+            userProfile.innerHTML = `
+                <img src="${currentUserData.photoURL}" alt="User Avatar" class="w-10 h-10 rounded-full border-2 border-sky-500">
+                <span class="font-semibold flex-grow">${currentUserData.displayName}</span>
+                <button id="logout-btn" title="تسجيل الخروج" class="text-slate-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
+            `;
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                signOut(auth);
+            });
         }
 
         // --- Chat Management ---
-        async function loadOrCreateChat() {
+        function listenToUserChats() {
             const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
-            const q = query(chatsRef, orderBy("createdAt", "desc"), limit(1));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) {
-                await createNewChat(true); // Create first chat with welcome message
-            } else {
-                currentChatId = snapshot.docs[0].id;
-                listenToMessages(currentChatId);
+            const q = query(chatsRef, orderBy("createdAt", "desc"));
+            unsubscribeChats = onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    createNewChat(true); // Create first chat if none exist
+                } else {
+                    renderChatList(snapshot.docs);
+                    if (!currentChatId || !snapshot.docs.some(doc => doc.id === currentChatId)) {
+                        const latestChatId = snapshot.docs[0].id;
+                        switchChat(latestChatId);
+                    }
+                }
+            });
+        }
+
+        function renderChatList(chatDocs) {
+            chatList.innerHTML = '';
+            chatDocs.forEach(doc => {
+                const chatData = doc.data();
+                const chatButton = document.createElement('button');
+                chatButton.dataset.chatId = doc.id;
+                const isActive = doc.id === currentChatId;
+                chatButton.className = `w-full text-right p-2 rounded-lg truncate transition-colors ${isActive ? 'bg-sky-600' : 'hover:bg-slate-700'}`;
+                chatButton.textContent = chatData.title || "محادثة قديمة";
+                chatList.appendChild(chatButton);
+            });
+        }
+        
+        chatList.addEventListener('click', (e) => {
+            if (e.target && e.target.dataset.chatId) {
+                const chatId = e.target.dataset.chatId;
+                if (chatId !== currentChatId) {
+                    switchChat(chatId);
+                }
             }
+        });
+
+        function switchChat(chatId) {
+            currentChatId = chatId;
+            listenToMessages(chatId);
+            // Re-render chat list to update active state
+            const q = query(collection(db, `users/${auth.currentUser.uid}/chats`), orderBy("createdAt", "desc"));
+            getDocs(q).then(snapshot => renderChatList(snapshot.docs));
         }
 
         async function createNewChat(withWelcome = false) {
-            if (unsubscribeMessages) unsubscribeMessages();
-            chatMessages.innerHTML = '';
             const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
             const newChatRef = await addDoc(chatsRef, { createdAt: serverTimestamp(), title: "محادثة جديدة" });
-            currentChatId = newChatRef.id;
-            listenToMessages(currentChatId);
+            switchChat(newChatRef.id);
             if (withWelcome) {
                 await addWelcomeMessage();
             }
         }
 
         function listenToMessages(chatId) {
-            if (unsubscribeMessages) unsubscribeMessages(); // Stop listening to old chat
+            if (unsubscribeMessages) unsubscribeMessages();
+            chatMessages.innerHTML = '';
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`);
             const q = query(messagesRef, orderBy("timestamp"));
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                chatMessages.innerHTML = '';
-                snapshot.forEach(doc => addMessageToUI(doc.data().text, doc.data().sender));
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const msgData = change.doc.data();
+                        addMessageToUI(msgData.text, msgData.sender);
+                    }
+                });
             });
         }
         
@@ -248,11 +301,39 @@
                 messageElement.className = 'flex items-start gap-3 justify-end';
                 messageElement.innerHTML = `<div class="bg-sky-600 p-3 rounded-xl max-w-lg text-white shadow-md"><p>${text}</p></div><img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar">`;
             } else {
+                const botMessageContainer = document.createElement('div');
+                botMessageContainer.className = 'bg-slate-700 p-3 rounded-xl max-w-lg shadow-md';
+                const p = document.createElement('p');
+                botMessageContainer.appendChild(p);
+                
                 messageElement.className = 'flex items-start gap-3';
-                messageElement.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div><div class="bg-slate-700 p-3 rounded-xl max-w-lg shadow-md"><p class="typewriter">${text}</p></div>`;
+                messageElement.innerHTML = `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div>`;
+                messageElement.appendChild(botMessageContainer);
+                
+                animateTyping(p, text);
             }
             chatMessages.appendChild(messageElement);
             scrollToBottom();
+        }
+        
+        function animateTyping(element, text) {
+            let i = 0;
+            element.textContent = "";
+            const cursor = document.createElement('span');
+            cursor.className = 'blinking-cursor';
+            cursor.textContent = '▋';
+            element.appendChild(cursor);
+
+            const typingInterval = setInterval(() => {
+                if (i < text.length) {
+                    element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+                    i++;
+                    scrollToBottom();
+                } else {
+                    clearInterval(typingInterval);
+                    cursor.remove();
+                }
+            }, 50);
         }
 
         function addLoadingIndicator() {
@@ -268,7 +349,13 @@
 
         async function saveMessage(text, sender) {
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
-            await addDoc(messagesRef, { text, sender, timestamp: serverTimestamp() });
+            const messageData = { text, sender, timestamp: serverTimestamp() };
+            await addDoc(messagesRef, messageData);
+            
+            if (sender === 'user') {
+                const chatRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}`);
+                await updateDoc(chatRef, { title: text }); // Update chat title with last user message
+            }
         }
 
         async function getTwistResponse(text) {
@@ -276,7 +363,7 @@
                 triggerConfetti();
                 return "يا قلبي! روح كلمها فوراً، الحياة قصيرة والفرص مبتستناش!";
             }
-            const isWise = Math.random() < 0.5; // Increased chance for AI response
+            const isWise = Math.random() < 0.5;
             if (isWise) return getGeminiResponseWithContext(text);
             return chaoticResponses[Math.floor(Math.random() * chaoticResponses.length)];
         }
@@ -302,10 +389,7 @@
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 const result = await response.json();
                 const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || chaoticResponses[0];
-                
-                // Fire and forget: update user notes in the background
                 updateUserAINotes(prompt, aiResponse);
-
                 return aiResponse;
             } catch (error) {
                 console.error("Gemini API error:", error);
@@ -330,11 +414,9 @@
                 if (newNotes) {
                     const userRef = doc(db, "users", auth.currentUser.uid);
                     await updateDoc(userRef, { aiNotes: newNotes });
-                    currentUserData.aiNotes = newNotes; // Update local state
+                    currentUserData.aiNotes = newNotes;
                 }
-            } catch(e) {
-                console.error("Could not update AI notes:", e);
-            }
+            } catch(e) { console.error("Could not update AI notes:", e); }
         }
 
         function triggerConfetti() {
