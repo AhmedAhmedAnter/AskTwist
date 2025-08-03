@@ -8,62 +8,88 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-gradient-start: #020617; --bg-gradient-mid1: #1e293b; --bg-gradient-mid2: #4a044e; --bg-gradient-end: #1e40af;
+            --bg-gradient-start: #111827; --bg-gradient-end: #020617;
             --accent-color: #38bdf8; --user-bubble-color: #0ea5e9;
+            --glass-bg: rgba(30, 41, 59, 0.5); --glass-border: rgba(255, 255, 255, 0.1);
         }
         body.theme-cosmic {
-            --bg-gradient-start: #1f0033; --bg-gradient-mid1: #3a025d; --bg-gradient-mid2: #00224d; --bg-gradient-end: #000000;
+            --bg-gradient-start: #1f0033; --bg-gradient-end: #000000;
             --accent-color: #a78bfa; --user-bubble-color: #8b5cf6;
+            --glass-bg: rgba(55, 22, 88, 0.5);
         }
         body.theme-forest {
-            --bg-gradient-start: #052e16; --bg-gradient-mid1: #166534; --bg-gradient-mid2: #047857; --bg-gradient-end: #064e3b;
+            --bg-gradient-start: #064e3b; --bg-gradient-end: #052e16;
             --accent-color: #4ade80; --user-bubble-color: #22c55e;
+            --glass-bg: rgba(4, 72, 55, 0.5);
         }
 
         body {
             font-family: 'Cairo', sans-serif;
-            background: linear-gradient(-45deg, var(--bg-gradient-start), var(--bg-gradient-mid1), var(--bg-gradient-mid2), var(--bg-gradient-end));
-            background-size: 400% 400%;
-            animation: auroraBG 25s ease infinite;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            background-attachment: fixed;
             transition: background 0.5s ease;
-            overflow-x: hidden;
+            overflow: hidden;
         }
-        @keyframes auroraBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
-        .glass-pane { background-color: rgba(23, 23, 31, 0.6); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-pane { 
+            background-color: var(--glass-bg); 
+            -webkit-backdrop-filter: blur(20px); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid var(--glass-border);
+            transition: background-color 0.5s ease, border-color 0.5s ease;
+        }
         .chat-messages::-webkit-scrollbar, .chat-list::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-track, .chat-list::-webkit-scrollbar-track { background: transparent; }
         .chat-messages::-webkit-scrollbar-thumb, .chat-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
-        .chat-messages::-webkit-scrollbar-thumb:hover, .chat-list::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
         
-        .pop-in { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes pop-in { 0% { transform: scale(0.95) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+        .pop-in { animation: pop-in 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        @keyframes pop-in { 
+            0% { transform: scale(0.9) translateY(20px); opacity: 0; } 
+            100% { transform: scale(1) translateY(0); opacity: 1; } 
+        }
 
         .blinking-cursor { animation: blink 1s step-end infinite; }
-        @keyframes blink { from, to { color: transparent; } 50% { color: var(--accent-color); } }
+        @keyframes blink { from, to { opacity: 0; } 50% { opacity: 1; } }
         
-        .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
-        .confetti { position: absolute; width: 10px; height: 20px; opacity: 0.9; animation: fall 4s linear forwards; }
-        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
-        
-        .action-icon { color: #94a3b8; transition: color 0.2s, transform 0.2s; }
-        .action-icon:hover { color: var(--accent-color); transform: scale(1.1); }
-       
-        /* Sidebar and Main Content Responsive Layout */
-        #sidebar {
-            transition: transform 0.3s ease-in-out;
+        #app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
         }
+        
+        #sidebar {
+            width: 288px; /* 72 in tailwind units */
+            flex-shrink: 0;
+            transition: transform 0.3s ease-in-out;
+            z-index: 100;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            transition: margin-right 0.3s ease-in-out;
+        }
+
+        /* Desktop layout */
+        @media (min-width: 768px) {
+            #sidebar.collapsed {
+                transform: translateX(100%);
+            }
+            #sidebar.collapsed + #main-content {
+                margin-right: -288px;
+            }
+        }
+
+        /* Mobile layout */
         @media (max-width: 767px) {
             #sidebar {
-                transform: translateX(100%);
                 position: fixed;
                 top: 0;
                 right: 0;
                 height: 100%;
-                z-index: 40;
+                transform: translateX(100%);
             }
             #sidebar.open {
                 transform: translateX(0);
@@ -72,24 +98,13 @@
                 transition: opacity 0.3s ease-in-out;
             }
         }
-        @media (min-width: 768px) {
-            #main-content {
-                transition: margin-right 0.3s ease-in-out;
-            }
-            #sidebar.collapsed + #main-content {
-                margin-right: 0;
-            }
-        }
     </style>
 </head>
-<body class="bg-slate-950 text-white">
+<body class="bg-slate-950 text-slate-200">
 
-    <div id="confetti-container" class="confetti-container"></div>
-
-    <!-- Modals -->
-    <div id="confirmation-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-[60] p-4">
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
         <div class="glass-pane rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center pop-in">
-            <h2 id="confirmation-title" class="text-2xl font-bold mb-4">هل أنت متأكد؟</h2>
+            <h2 id="confirmation-title" class="text-2xl font-bold mb-4 text-white">هل أنت متأكد؟</h2>
             <p id="confirmation-message" class="text-slate-300 mb-6">لا يمكن التراجع عن هذا الإجراء.</p>
             <div class="flex gap-4">
                 <button id="confirm-btn" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition-colors">تأكيد</button>
@@ -98,10 +113,10 @@
         </div>
     </div>
     
-    <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
-        <div class="text-center p-8 glass-pane rounded-2xl shadow-2xl pop-in">
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+        <div class="text-center p-8 glass-pane rounded-2xl shadow-2xl pop-in max-w-sm w-full">
             <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20 mb-4">T</div>
-            <h1 class="text-3xl font-bold text-slate-100">أهلاً بك في "اسأل تويست"</h1>
+            <h1 class="text-3xl font-bold text-white">أهلاً بك في "اسأل تويست"</h1>
             <p class="text-slate-400 mt-2 mb-6">سجّل دخولك لتبدأ المغامرة.</p>
             <button id="google-signin-btn" class="w-full flex items-center justify-center gap-3 bg-white text-slate-800 font-bold py-3 px-6 rounded-lg hover:bg-slate-200 transition-colors">
                 <svg class="w-6 h-6" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
@@ -109,48 +124,21 @@
             </button>
         </div>
     </div>
-    <div id="name-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
-        <div class="p-8 glass-pane rounded-2xl shadow-2xl w-full max-w-sm pop-in">
-            <h2 class="text-2xl font-bold text-center mb-2">آخر خطوة!</h2>
-            <p class="text-slate-400 text-center mb-6">ما هو الاسم الذي تود أن نناديك به؟</p>
-            <form id="name-form">
-                <input type="text" id="name-input" class="w-full bg-slate-900/70 border-2 border-slate-700 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 text-center" placeholder="اكتب اسمك هنا" required>
-                <button type="submit" class="w-full mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">حفظ والمتابعة</button>
-            </form>
-        </div>
-    </div>
-    <div id="share-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-        <div class="glass-pane rounded-2xl shadow-2xl w-full max-w-md p-6 text-center pop-in">
-            <h2 class="text-2xl font-bold mb-4">شارك بطاقتك</h2>
-            <canvas id="share-canvas" width="1000" height="1000" class="w-full h-auto rounded-lg"></canvas>
-            <div class="flex gap-4 mt-4">
-                <a id="download-btn" href="#" download="twist-reply.png" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">تنزيل</a>
-                <button id="close-share-modal" class="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 rounded-lg transition-colors">إغلاق</button>
-            </div>
-        </div>
-    </div>
-    <div id="tools-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-        <div class="glass-pane rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative pop-in">
-            <button id="close-tools-modal" class="absolute top-4 left-4 action-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
-            <h2 class="text-3xl font-bold text-center mb-6">أدوات تويست</h2>
-            <div id="tools-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
-        </div>
-    </div>
-
+    
     <!-- Main App Container -->
-    <div id="app-container" class="hidden relative h-screen w-full md:flex">
-        <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black/50 z-30"></div>
+    <div id="app-container" class="hidden">
+        <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black/60 z-40"></div>
         <!-- Sidebar -->
-        <aside id="sidebar" class="glass-pane w-72 flex-shrink-0 flex flex-col p-4 h-full">
+        <aside id="sidebar" class="bg-slate-900/30 backdrop-blur-xl border-l border-slate-800/50 flex flex-col p-4 h-full">
             <div class="flex-grow flex flex-col min-h-0">
-                <button id="newChatBtn" class="w-full text-right bg-slate-700/50 hover:bg-slate-700 rounded-lg p-3 mb-4 transition-colors flex items-center gap-3 font-semibold">
+                <button id="newChatBtn" class="w-full text-right bg-sky-600/80 hover:bg-sky-500 text-white rounded-lg p-3 mb-4 transition-all flex items-center gap-3 font-semibold shadow-lg shadow-sky-500/10">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                     محادثة جديدة
                 </button>
-                <div id="chat-list" class="flex-grow overflow-y-auto space-y-2 pr-2"></div>
+                <div id="chat-list" class="flex-grow overflow-y-auto space-y-2 pr-2 -mr-2"></div>
                 
                 <div class="mt-4 border-t border-slate-700/50 pt-4">
-                    <button id="open-tools-modal-btn" class="w-full text-right bg-slate-700/50 hover:bg-slate-700 rounded-lg p-3 transition-colors flex items-center gap-3 font-semibold">
+                    <button id="open-tools-modal-btn" class="w-full text-right hover:bg-slate-700/50 rounded-lg p-3 transition-colors flex items-center gap-3 font-semibold text-slate-300 hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01-.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
                         أدوات تويست
                     </button>
@@ -160,29 +148,25 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main id="main-content" class="flex-1 flex flex-col bg-transparent min-w-0 md:mr-72">
-            <header class="flex items-center justify-between p-4 border-b border-slate-800/80 glass-pane z-10">
+        <main id="main-content" class="flex flex-col min-w-0">
+            <header class="flex items-center justify-between p-4 border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-xl z-10">
                  <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-fuchsia-500">اسأل تويست</h1>
                  <button id="sidebar-toggle-btn" class="p-2 text-slate-300 hover:text-white">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-16 6h16" /></svg>
                  </button>
             </header>
             
-            <!-- Chat View -->
             <div id="chat-view" class="flex-1 flex flex-col min-h-0">
                 <div id="chat-messages" class="chat-messages flex-1 overflow-y-auto p-4 sm:p-6 space-y-6"></div>
-                <div class="p-4 bg-transparent border-t border-slate-800/50">
+                <div class="p-4 bg-transparent">
                     <form id="chat-form" class="relative">
-                        <input type="text" id="userInput" class="w-full glass-pane rounded-xl py-4 pr-4 pl-14 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-base sm:text-lg" placeholder="اكتب سؤالك هنا..." autocomplete="off">
+                        <input type="text" id="userInput" class="w-full glass-pane rounded-xl py-4 pr-4 pl-16 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-base sm:text-lg" placeholder="اكتب سؤالك هنا..." autocomplete="off">
                         <button type="submit" id="submitBtn" class="absolute inset-y-0 left-0 flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold w-12 h-12 rounded-lg ml-2 my-auto transition-all transform hover:scale-110 active:scale-100 disabled:bg-slate-500 disabled:cursor-not-allowed disabled:scale-100">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                         </button>
                     </form>
                 </div>
             </div>
-
-            <!-- Tools Views -->
-            <div id="tools-view-container" class="hidden flex-1 p-4 sm:p-6 overflow-y-auto"></div>
         </main>
     </div>
 
@@ -195,22 +179,10 @@
         // --- DOM Elements ---
         const loginOverlay = document.getElementById('login-overlay'),
               googleSigninBtn = document.getElementById('google-signin-btn'),
-              nameModal = document.getElementById('name-modal'),
-              nameForm = document.getElementById('name-form'),
-              nameInput = document.getElementById('name-input'),
-              shareModal = document.getElementById('share-modal'),
-              shareCanvas = document.getElementById('share-canvas'),
-              downloadBtn = document.getElementById('download-btn'),
-              closeShareModalBtn = document.getElementById('close-share-modal'),
-              toolsModal = document.getElementById('tools-modal'),
-              toolsGrid = document.getElementById('tools-grid'),
-              openToolsModalBtn = document.getElementById('open-tools-modal-btn'),
-              closeToolsModalBtn = document.getElementById('close-tools-modal'),
               appContainer = document.getElementById('app-container'),
               userProfile = document.getElementById('user-profile'),
               chatList = document.getElementById('chat-list'),
               chatView = document.getElementById('chat-view'),
-              toolsViewContainer = document.getElementById('tools-view-container'),
               userInput = document.getElementById('userInput'),
               chatForm = document.getElementById('chat-form'),
               submitBtn = document.getElementById('submitBtn'),
@@ -218,37 +190,38 @@
               newChatBtn = document.getElementById('newChatBtn'),
               sidebarToggleBtn = document.getElementById('sidebar-toggle-btn'),
               sidebar = document.getElementById('sidebar'),
+              mainContent = document.getElementById('main-content'),
               sidebarOverlay = document.getElementById('sidebar-overlay'),
-              confettiContainer = document.getElementById('confetti-container'),
               confirmationModal = document.getElementById('confirmation-modal'),
               confirmBtn = document.getElementById('confirm-btn'),
-              cancelBtn = document.getElementById('cancel-btn');
+              cancelBtn = document.getElementById('cancel-btn'),
+              openToolsModalBtn = document.getElementById('open-tools-modal-btn');
+
 
         // --- Firebase & State ---
-        let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null, unsubscribeChats = null, currentView = 'chat';
+        let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null, unsubscribeChats = null;
         
-        // IMPORTANT: Replace with your actual Firebase configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyDaCWkD_0cuGafWJAiDAFtvPAmst4PX99U",
+            authDomain: "ask-twist.firebaseapp.com",
+            projectId: "ask-twist",
+            storageBucket: "ask-twist.appspot.com",
+            messagingSenderId: "342736773610",
+            appId: "1:342736773610:web:da6e5a4b77afeb1b5a9293"
         };
+        const geminiApiKey = "AIzaSyD28KkSN0-uq-TVJMO67Ur6vpOk7OvC2JM";
+
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
         } catch (e) { 
-            console.error("Firebase initialization failed. Please check your firebaseConfig.", e);
-            alert("فشل تهيئة التطبيق. يرجى مراجعة الإعدادات.");
+            console.error("Firebase initialization failed.", e);
         }
         
         // --- Sound Effects ---
         const sendSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).toDestination();
         const receiveSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
-        const amplifySynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination();
 
         // --- Auth & UI Setup ---
         onAuthStateChanged(auth, async (user) => {
@@ -258,12 +231,17 @@
                 const userRef = doc(db, "users", user.uid);
                 const userSnap = await getDoc(userRef);
                 if (userSnap.exists()) {
-                    currentUserData = userSnap.data();
+                    currentUserData = { id: user.uid, ...userSnap.data() };
                     showApp();
                     listenToUserChats();
                 } else {
-                    loginOverlay.classList.add('hidden');
-                    nameModal.classList.remove('hidden');
+                    // This case is for first-time Google sign-in users
+                    // We need to create their profile.
+                    const newUserProfile = { displayName: user.displayName, email: user.email, photoURL: user.photoURL, aiNotes: "مستخدم جديد، يبدو فضولياً." };
+                    await setDoc(doc(db, "users", user.uid), newUserProfile);
+                    currentUserData = { id: user.uid, ...newUserProfile };
+                    showApp();
+                    listenToUserChats();
                 }
             } else {
                 showLogin();
@@ -274,44 +252,27 @@
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(err => {
                 console.error("Sign-in error", err);
-                // The COOP error often manifests here but is usually informational and doesn't break the flow.
             });
-        });
-
-        nameForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const user = auth.currentUser;
-            const displayName = nameInput.value.trim();
-            if (user && displayName) {
-                const newUserProfile = { uid: user.uid, displayName, email: user.email, photoURL: user.photoURL, aiNotes: "مستخدم جديد، يبدو فضولياً." };
-                await setDoc(doc(db, "users", user.uid), newUserProfile);
-                currentUserData = newUserProfile;
-                showApp();
-                listenToUserChats();
-            }
         });
 
         function showLogin() {
             loginOverlay.classList.remove('hidden');
             appContainer.classList.add('hidden');
-            nameModal.classList.add('hidden');
         }
 
         function showApp() {
             loginOverlay.classList.add('hidden');
-            nameModal.classList.add('hidden');
             appContainer.classList.remove('hidden');
-            appContainer.classList.add('md:flex');
             updateUserProfileUI();
             const savedTheme = localStorage.getItem('twist-theme') || 'default';
-            document.body.className = `bg-slate-950 text-white ${savedTheme}`;
+            document.body.className = `bg-slate-950 text-slate-200 ${savedTheme}`;
         }
         
         function updateUserProfileUI() {
             if (!currentUserData) return;
             userProfile.innerHTML = `
                 <img src="${currentUserData.photoURL}" alt="User Avatar" class="w-10 h-10 rounded-full border-2" style="border-color: var(--accent-color);">
-                <span class="font-semibold flex-grow truncate">${currentUserData.displayName}</span>
+                <span class="font-semibold flex-grow truncate text-white">${currentUserData.displayName}</span>
                 <button id="theme-switcher" title="تغيير المظهر" class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg></button>
                 <button id="logout-btn" title="تسجيل الخروج" class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
             `;
@@ -324,22 +285,8 @@
         function switchTheme() {
             currentThemeIndex = (currentThemeIndex + 1) % themes.length;
             const newTheme = themes[currentThemeIndex];
-            document.body.className = `bg-slate-950 text-white ${newTheme}`;
+            document.body.className = `bg-slate-950 text-slate-200 ${newTheme}`;
             localStorage.setItem('twist-theme', newTheme);
-        }
-
-        // --- View Management ---
-        function switchView(viewName) {
-            currentView = viewName;
-            chatView.classList.toggle('hidden', viewName !== 'chat');
-            toolsViewContainer.classList.toggle('hidden', viewName === 'chat');
-
-            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-            if (viewName !== 'chat') {
-                document.querySelector(`.tool-btn[data-tool="${viewName}"]`)?.classList.add('active');
-                renderToolUI(viewName);
-            }
-            // No need for an else block to re-render chat list, onSnapshot handles it.
         }
 
         // --- Chat Management ---
@@ -348,17 +295,14 @@
             const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
             const q = query(chatsRef, orderBy("createdAt", "desc"));
             unsubscribeChats = onSnapshot(q, (snapshot) => {
-                renderChatList(snapshot.docs);
                 if (snapshot.empty) {
-                    createNewChat(true);
+                    createNewChat();
                 } else {
+                    renderChatList(snapshot.docs);
                     if (!currentChatId || !snapshot.docs.some(doc => doc.id === currentChatId)) {
                         switchChat(snapshot.docs[0].id);
                     }
                 }
-            }, (error) => {
-                console.error("FirebaseError fetching chats:", error);
-                // This is where the permission error would be caught.
             });
         }
 
@@ -370,9 +314,9 @@
                 chatItem.className = 'flex items-center gap-2 group';
                 const chatButton = document.createElement('button');
                 chatButton.dataset.chatId = doc.id;
-                const isActive = doc.id === currentChatId && currentView === 'chat';
-                chatButton.className = `flex-grow text-right p-2 rounded-lg truncate transition-colors ${isActive ? 'bg-sky-600' : 'hover:bg-slate-700/80'}`;
-                chatButton.textContent = chatData.title || "محادثة قديمة";
+                const isActive = doc.id === currentChatId;
+                chatButton.className = `flex-grow text-right p-2 rounded-lg truncate transition-colors ${isActive ? 'bg-sky-600/50 text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}`;
+                chatButton.textContent = chatData.title || "محادثة جديدة";
                 const deleteButton = document.createElement('button');
                 deleteButton.dataset.chatId = doc.id;
                 deleteButton.className = 'delete-chat-btn p-1 text-slate-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity';
@@ -393,9 +337,7 @@
                 });
             } else if (chatButton) {
                 const chatId = chatButton.dataset.chatId;
-                switchView('chat');
                 if (chatId !== currentChatId) switchChat(chatId);
-                // Close sidebar on mobile after selection
                 if (window.innerWidth < 768) {
                     sidebar.classList.remove('open');
                     sidebarOverlay.classList.add('hidden');
@@ -419,18 +361,19 @@
         function switchChat(chatId) {
             currentChatId = chatId;
             listenToMessages(chatId);
-            renderChatList(Array.from(chatList.querySelectorAll('button[data-chat-id]')).map(btn => ({
-                id: btn.dataset.chatId,
-                data: () => ({ title: btn.textContent })
-            })));
+            // Visually update active chat without re-fetching
+            document.querySelectorAll('#chat-list button').forEach(btn => {
+                btn.classList.toggle('bg-sky-600/50', btn.dataset.chatId === chatId);
+                btn.classList.toggle('text-white', btn.dataset.chatId === chatId);
+                btn.classList.toggle('text-slate-400', btn.dataset.chatId !== chatId);
+            });
         }
 
-        async function createNewChat(withWelcome = false) {
-            switchView('chat');
+        async function createNewChat() {
             try {
                 const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
                 const newChatRef = await addDoc(chatsRef, { createdAt: serverTimestamp(), title: "محادثة جديدة" });
-                if (withWelcome) await saveMessage(`أهلاً يا ${currentUserData.displayName}. أنا تويست، كيف أخدمك اليوم؟`, 'bot', newChatRef.id);
+                await saveMessage(`أهلاً يا ${currentUserData.displayName}. أنا تويست، كيف أخدمك اليوم؟`, 'bot', newChatRef.id);
                 switchChat(newChatRef.id);
             } catch (error) {
                 console.error("Error creating new chat:", error);
@@ -443,34 +386,20 @@
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`);
             const q = query(messagesRef, orderBy("timestamp"));
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                if (snapshot.empty && currentView === 'chat') {
-                    addWelcomeMessageUI();
-                } else {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === "added") {
-                            const msgData = change.doc.data();
-                            addMessageToUI(msgData.text, msgData.sender, change.doc.id);
-                        }
-                    });
-                }
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const msgData = change.doc.data();
+                        addMessageToUI(msgData.text, msgData.sender, change.doc.id);
+                    }
+                });
             });
         }
         
-        function addWelcomeMessageUI() {
-            chatMessages.innerHTML = `<div id="welcome-message" class="text-center pop-in p-8">
-                <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20">T</div>
-                <h1 class="text-4xl font-bold text-slate-100 mt-4">اسأل تويست</h1>
-                <p class="text-slate-400 mt-2 text-lg">مرحباً ${currentUserData.displayName}! اسأل أي شيء... أو جرب إحدى أدواتي من القائمة.</p>
-            </div>`;
-        }
-        
-        // --- Message & Tool Handling ---
         function scrollToBottom() { 
-            setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 100);
+            setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 50);
         }
 
         function addMessageToUI(text, sender, messageId) {
-            document.getElementById('welcome-message')?.remove();
             const messageContainer = document.createElement('div');
             messageContainer.className = 'message-wrapper pop-in w-full';
             const isUser = sender === 'user';
@@ -478,16 +407,10 @@
             messageContainer.innerHTML = `
                 <div class="flex items-start gap-3 ${isUser ? 'justify-end' : ''}">
                     ${!isUser ? `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div>` : ''}
-                    <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-lg">
-                        <div class="p-3 rounded-xl shadow-md ${isUser ? 'text-white' : 'bg-slate-700/80 glass-pane'}" ${isUser ? `style="background-color: var(--user-bubble-color);"` : ''}>
-                            <p class="bot-text-content">${isUser ? text : ''}</p>
+                    <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-xl">
+                        <div class="p-3 rounded-xl shadow-md ${isUser ? 'text-white' : 'bg-slate-700/80 glass-pane'} text-right" ${isUser ? `style="background-color: var(--user-bubble-color);"` : ''}>
+                            <p class="bot-text-content whitespace-pre-wrap">${isUser ? text : ''}</p>
                         </div>
-                        ${!isUser ? `
-                        <div class="flex items-center gap-3 mt-2">
-                            <button class="play-audio-btn action-icon" data-text="${text}" title="استمع للرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg></button>
-                            <button class="share-card-btn action-icon" data-message-id="${messageId}" title="مشاركة الرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg></button>
-                            <button class="amplify-btn action-icon" data-message-id="${messageId}" title="زوّدها يا تويست"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 011-1h.5a1.5 1.5 0 000-3H6a1 1 0 01-1-1V8a1 1 0 011-1h3a1 1 0 001-1v-.5z" /></svg></button>
-                        </div>` : ''}
                     </div>
                     ${isUser ? `<img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar">` : ''}
                 </div>`;
@@ -503,8 +426,8 @@
             let i = 0;
             element.textContent = "";
             const cursor = document.createElement('span');
-            cursor.className = 'blinking-cursor';
-            cursor.textContent = '▋';
+            cursor.className = 'blinking-cursor text-[color:var(--accent-color)]';
+            cursor.innerHTML = '&#9646;';
             element.appendChild(cursor);
             const typingInterval = setInterval(() => {
                 if (i < text.length) {
@@ -528,25 +451,23 @@
             }
         }
 
-        async function getGeminiResponseWithContext(prompt, historyOverride = null, customSystemInstruction = null) {
-            const apiKey = ""; // Canvas will provide the key
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        async function getGeminiResponse(prompt) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
-            const q = query(messagesRef, orderBy("timestamp", "desc"), limit(6));
+            const q = query(messagesRef, orderBy("timestamp", "desc"), limit(8));
             const snapshot = await getDocs(q);
-            const history = historyOverride || snapshot.docs.reverse().map(doc => ({ role: doc.data().sender === 'user' ? 'user' : 'model', parts: [{ text: doc.data().text }] }));
+            const history = snapshot.docs.reverse().map(doc => ({ role: doc.data().sender === 'user' ? 'user' : 'model', parts: [{ text: doc.data().text }] }));
             
-            const systemInstruction = customSystemInstruction || `أنت "تويست"، بوت مصري ذكي ودمه تقيل. مهمتك ترد على المستخدم اللي اسمه "${currentUserData.displayName}" بأسلوب ساخر وفيه قصف جبهات وطحن خواطر. لازم ردودك تكون قصيرة، غير متوقعة، وباللهجة المصرية. لو طلب منك طلب مباشر زي "قول نكتة"، نفذ الطلب بس بأسلوبك الساخر. ملاحظاتك الحالية عن المستخدم: "${currentUserData.aiNotes}"`;
+            const systemInstruction = `أنت "تويست"، بوت مصري ذكي ودمه تقيل. مهمتك ترد على المستخدم اللي اسمه "${currentUserData.displayName}" بأسلوب ساخر وفيه قصف جبهات وطحن خواطر. لازم ردودك تكون قصيرة، غير متوقعة، وباللهجة المصرية. لو طلب منك طلب مباشر زي "قول نكتة"، نفذ الطلب بس بأسلوبك الساخر. ملاحظاتك الحالية عن المستخدم: "${currentUserData.aiNotes}"`;
             
-            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "تمام، أنا جاهز." }] }, ...history ];
-            if (!historyOverride) contents.push({ role: 'user', parts: [{ text: prompt }] });
+            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "تمام، أنا جاهز." }] }, ...history, { role: 'user', parts: [{ text: prompt }] } ];
 
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents }) });
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 const result = await response.json();
                 const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "عفواً، حدث خطأ ما.";
-                if (!historyOverride) updateUserAINotes(prompt, aiResponse);
+                updateUserAINotes(prompt, aiResponse);
                 return aiResponse;
             } catch (error) {
                 console.error("Gemini API error:", error);
@@ -555,8 +476,7 @@
         }
         
         async function updateUserAINotes(lastQuestion, lastAnswer) {
-            const apiKey = ""; // Canvas will provide the key
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
             const prompt = `حلل شخصية المستخدم من سؤاله الأخير وإجابتي عليه، وحدّث ملاحظاتك عنه في جملة واحدة بأسلوب ساخر. الملاحظات السابقة: "${currentUserData.aiNotes}" سؤاله الأخير: "${lastQuestion}" إجابتي: "${lastAnswer}" الملاحظات المحدثة (جملة واحدة بس):`;
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }) });
@@ -570,8 +490,7 @@
         }
 
         async function generateChatTitle(firstMessage) {
-            const apiKey = ""; // Canvas will provide the key
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
             const prompt = `لخص هذا السؤال في ٣ كلمات أو أقل ليكون عنواناً للمحادثة: "${firstMessage}"`;
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }) });
@@ -600,7 +519,7 @@
             document.getElementById('chat-messages').innerHTML += `<div id="loading-indicator" class="flex items-start gap-3 pop-in"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 animate-pulse">T</div><div class="bg-slate-700/80 glass-pane p-4 rounded-xl"><div class="flex items-center space-x-2 space-x-reverse"><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span></div></div></div>`;
             scrollToBottom();
 
-            const responseText = await getTwistResponse(text);
+            const responseText = await getGeminiResponse(text);
             document.getElementById('loading-indicator')?.remove();
             
             await saveMessage(responseText, 'bot');
@@ -610,112 +529,9 @@
             userInput.focus();
         }
         
-        // --- New Feature Handlers ---
-        chatMessages.addEventListener('click', async (e) => {
-            const playBtn = e.target.closest('.play-audio-btn'), shareBtn = e.target.closest('.share-card-btn'), amplifyBtn = e.target.closest('.amplify-btn');
-            if (playBtn) { playBtn.disabled = true; await playAudio(playBtn.dataset.text); playBtn.disabled = false; }
-            if (shareBtn) await generateShareCard(shareBtn.dataset.messageId);
-            if (amplifyBtn) { amplifyBtn.disabled = true; await amplifyResponse(amplifyBtn.dataset.messageId); amplifyBtn.disabled = false; }
-        });
-
-        async function playAudio(text) {
-            const apiKey = ""; // Canvas will provide the key
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-            const payload = { contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Rasalgethi" } } } }, model: "gemini-2.5-flash-preview-tts" };
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                const result = await response.json();
-                const audioData = result.candidates[0].content.parts[0].inlineData.data;
-                const pcmData = Uint8Array.from(atob(audioData), c => c.charCodeAt(0)).buffer;
-                const pcm16 = new Int16Array(pcmData);
-                const wavBlob = pcmToWav(pcm16, parseInt(result.candidates[0].content.parts[0].inlineData.mimeType.match(/rate=(\d+)/)[1], 10));
-                new Audio(URL.createObjectURL(wavBlob)).play();
-            } catch (error) { console.error("TTS Error:", error); }
-        }
-        
-        function pcmToWav(pcmData, sampleRate) {
-            const view = new DataView(new ArrayBuffer(44 + pcmData.length * 2));
-            function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
-            writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcmData.length * 2, true); writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
-            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
-            writeString(view, 36, 'data'); view.setUint32(40, pcmData.length * 2, true);
-            for (let i = 0; i < pcmData.length; i++) view.setInt16(44 + i * 2, pcmData[i], true);
-            return new Blob([view], { type: 'audio/wav' });
-        }
-        
-        async function generateShareCard(botMessageId) {
-            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
-            const botMsgSnap = await getDoc(botMsgRef);
-            if (!botMsgSnap.exists()) return;
-            const botText = botMsgSnap.data().text;
-            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
-            const q = query(messagesRef, orderBy("timestamp", "desc"));
-            const snapshot = await getDocs(q);
-            let userText = "سؤال...";
-            let found = false;
-            for (const doc of snapshot.docs) {
-                if (doc.id === botMessageId) found = true;
-                if (found && doc.data().sender === 'user') { userText = doc.data().text; break; }
-            }
-            const ctx = shareCanvas.getContext('2d');
-            const gradient = ctx.createLinearGradient(0, 0, 1000, 1000);
-            gradient.addColorStop(0, getComputedStyle(document.body).getPropertyValue('--bg-gradient-start'));
-            gradient.addColorStop(1, getComputedStyle(document.body).getPropertyValue('--bg-gradient-mid2'));
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 1000, 1000);
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#cbd5e1'; ctx.font = 'bold 50px Cairo';
-            wrapText(ctx, `أنت سألت: "${userText}"`, 500, 200, 900, 60);
-            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent-color'); ctx.font = 'bold 70px Cairo';
-            wrapText(ctx, `تويست أجاب: "${botText}"`, 500, 500, 900, 80);
-            ctx.fillStyle = '#94a3b8'; ctx.font = '40px Cairo';
-            ctx.fillText('asstwist.web.app', 500, 900);
-            downloadBtn.href = shareCanvas.toDataURL('image/png');
-            shareModal.classList.remove('hidden');
-        }
-        
-        function wrapText(context, text, x, y, maxWidth, lineHeight) {
-            const words = text.split(' '); let line = '';
-            for (let n = 0; n < words.length; n++) {
-                const testLine = line + words[n] + ' ';
-                if (context.measureText(testLine).width > maxWidth && n > 0) {
-                    context.fillText(line, x, y); line = words[n] + ' '; y += lineHeight;
-                } else { line = testLine; }
-            }
-            context.fillText(line, x, y);
-        }
-
-        async function amplifyResponse(botMessageId) {
-            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
-            const botMsgSnap = await getDoc(botMsgRef);
-            if (!botMsgSnap.exists()) return;
-            const botText = botMsgSnap.data().text;
-            
-            document.getElementById('chat-messages').innerHTML += `<div id="loading-indicator" class="flex items-start gap-3 pop-in"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 animate-pulse">T</div><div class="bg-slate-700/80 glass-pane p-4 rounded-xl"><div class="flex items-center space-x-2 space-x-reverse"><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span></div></div></div>`;
-            scrollToBottom();
-            const amplifyPrompt = `أنا رديت على المستخدم بالرد ده: "${botText}". دلوقتي محتاج أزوّدها وأرد رد أقوى وأكثر سخرية وقصف جبهة. فاجئني برد يخليه يراجع نفسه.`;
-            const amplifiedResponse = await getGeminiResponseWithContext(amplifyPrompt, [{ role: 'user', parts: [{ text: amplifyPrompt }] }]);
-            document.getElementById('loading-indicator')?.remove();
-            await saveMessage(amplifiedResponse, 'bot');
-            amplifySynth.triggerAttackRelease("C4", "8n");
-        }
-        
-        function triggerConfetti() {
-            for (let i = 0; i < 100; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.animationDelay = Math.random() * 2 + 's';
-                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                confettiContainer.appendChild(confetti);
-                setTimeout(() => confetti.remove(), 4000);
-            }
-        }
-
         // --- Event Listeners & Initializers ---
         chatForm.addEventListener('submit', handleSubmit);
-        newChatBtn.addEventListener('click', () => createNewChat(true));
+        newChatBtn.addEventListener('click', () => createNewChat());
         sidebarToggleBtn.addEventListener('click', () => {
             const isMobile = window.innerWidth < 768;
             if (isMobile) {
@@ -723,196 +539,14 @@
                 sidebarOverlay.classList.toggle('hidden');
             } else {
                 sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('md:mr-72');
             }
         });
         sidebarOverlay.addEventListener('click', () => {
             sidebar.classList.remove('open');
             sidebarOverlay.classList.add('hidden');
         });
-        closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
-        openToolsModalBtn.addEventListener('click', () => {
-            renderToolsGrid();
-            toolsModal.classList.remove('hidden');
-        });
-        closeToolsModalBtn.addEventListener('click', () => toolsModal.classList.add('hidden'));
         
-        function renderToolsGrid() {
-            const toolData = {
-                dream: { title: "مترجم الأحلام", icon: "🌙" },
-                excuse: { title: "مولّد الأعذار", icon: "🏃‍♂️" },
-                decision: { title: "صانع القرار", icon: "🤔" },
-                poet: { title: "شاعر الذكاء الاصطناعي", icon: "📜" },
-                compliment: { title: "مولّد الإطراءات", icon: "😏" },
-                horoscope: { title: "الأبراج الملتوية", icon: "✨" },
-            };
-            toolsGrid.innerHTML = Object.entries(toolData).map(([key, {title, icon}]) => `
-                <button class="tool-btn-grid glass-pane p-4 rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-slate-700/50 transition-colors" data-tool="${key}">
-                    <span class="text-4xl">${icon}</span>
-                    <span class="font-semibold text-center">${title}</span>
-                </button>
-            `).join('');
-        }
-
-        toolsGrid.addEventListener('click', (e) => {
-            const toolBtn = e.target.closest('.tool-btn-grid');
-            if (toolBtn) {
-                switchView(toolBtn.dataset.tool);
-                toolsModal.classList.add('hidden');
-            }
-        });
-        
-        function renderToolUI(toolName) {
-            const toolData = {
-                dream: { title: "مترجم الأحلام", desc: "أخبرني بحلمك، وسأكشف لك عن معانيه الخفية (والعبثية).", placeholder: "رأيت في المنام أنني أطير...", btnText: "فسّر الحلم", inputType: "textarea" },
-                excuse: { title: "مولّد الأعذار", desc: "لماذا تريد عذراً؟ (مثال: للتأخر عن العمل)", placeholder: "للتأخر عن العمل...", btnText: "اخترع لي عذراً", inputType: "input" },
-                decision: { title: "صانع القرار", desc: "أعطني خيارين، وسأختار لك الأنسب... بوجهة نظري طبعاً.", placeholder1: "الخيار الأول", placeholder2: "الخيار الثاني", btnText: "اختر لي يا تويست", inputType: "dual-input" },
-                poet: { title: "شاعر الذكاء الاصطناعي", desc: "اطلب قصيدة عن أي موضوع، واستمتع بالنتيجة.", placeholder: "قصيدة عن حب الشاورما...", btnText: "اكتب يا تويست", inputType: "input" },
-                compliment: { title: "مولّد الإطراءات", desc: "لمن تريد توجيه هذه المجاملة الملتوية؟", placeholder: "لمديري في الشغل...", btnText: "جامل يا تويست", inputType: "input" },
-                horoscope: { title: "الأبراج الملتوية", desc: "ما هو برجك؟ لأخبرك بما لا تريد سماعه.", placeholder: "مثال: برج الجوزاء", btnText: "اكشف لي طالعي", inputType: "input" },
-            };
-            const currentTool = toolData[toolName];
-            let inputHtml = '';
-            if (currentTool.inputType === 'textarea') {
-                inputHtml = `<textarea id="tool-input" class="w-full h-40 glass-pane rounded-xl p-4 text-lg" placeholder="${currentTool.placeholder}"></textarea>`;
-            } else if (currentTool.inputType === 'input') {
-                inputHtml = `<input type="text" id="tool-input" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="${currentTool.placeholder}">`;
-            } else if (currentTool.inputType === 'dual-input') {
-                inputHtml = `<div class="flex flex-col sm:flex-row gap-4"><input type="text" id="tool-input-1" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="${currentTool.placeholder1}"><input type="text" id="tool-input-2" class="w-full glass-pane rounded-xl p-4 text-lg text-center" placeholder="${currentTool.placeholder2}"></div>`;
-            }
-            
-            toolsViewContainer.innerHTML = `
-                <div class="pop-in text-center max-w-2xl mx-auto">
-                    <h2 class="text-3xl font-bold mb-2">${currentTool.title}</h2>
-                    <p class="text-slate-400 mb-6">${currentTool.desc}</p>
-                    <div class="space-y-4">${inputHtml}</div>
-                    <button id="tool-submit-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">${currentTool.btnText}</button>
-                    <div id="tool-result-container" class="mt-6 glass-pane rounded-xl min-h-[100px] hidden text-right p-6"></div>
-                </div>`;
-        }
-
-        toolsViewContainer.addEventListener('click', async (e) => {
-            if (e.target.closest('#tool-submit-btn')) {
-                handleToolSubmit(currentView);
-            }
-            if (e.target.closest('.reaction-btn')) {
-                const btn = e.target.closest('.reaction-btn');
-                handleReaction(btn.dataset.responseId, btn.dataset.reaction);
-            }
-             if (e.target.closest('.reply-btn')) {
-                const form = e.target.closest('.reply-form');
-                if(form) form.classList.toggle('hidden');
-            }
-            if (e.target.closest('.submit-reply-btn')) {
-                e.preventDefault();
-                const form = e.target.closest('.reply-form');
-                const replyInput = form.querySelector('.reply-input');
-                const responseId = e.target.dataset.responseId;
-                if (replyInput.value.trim()) {
-                    handleReaction(responseId, null, replyInput.value.trim());
-                    replyInput.value = '';
-                    form.classList.add('hidden');
-                }
-            }
-        });
-        
-        async function handleToolSubmit(toolName) {
-            const resultDiv = document.getElementById('tool-result-container');
-            let input, instruction;
-            
-            switch(toolName) {
-                // Cases for each tool... (same as before)
-            }
-
-            if (!input) return;
-            resultDiv.classList.remove('hidden');
-            resultDiv.innerHTML = `<div class="animate-pulse text-center p-4">تويست يخلط المكونات...</div>`;
-            
-            const response = await getToolResponse(input, instruction);
-            
-            const responseRef = await addDoc(collection(db, `tools/${toolName}/responses`), {
-                prompt: input,
-                response: response,
-                createdAt: serverTimestamp(),
-                userId: auth.currentUser.uid // Track who created it
-            });
-
-            renderToolResponse(resultDiv, response, responseRef.id);
-        }
-
-        async function getToolResponse(prompt, instruction) {
-            const apiKey = ""; // Canvas will provide the key
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: instruction }] }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            "personaIntro": { "type": "STRING" },
-                            "mainAnswer": { "type": "STRING" }
-                        },
-                        required: ["personaIntro", "mainAnswer"]
-                    }
-                }
-            };
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                const result = await response.json();
-                const parsedJson = JSON.parse(result.candidates[0].content.parts[0].text);
-                return parsedJson;
-            } catch (e) {
-                console.error("Tool response error", e);
-                return { personaIntro: `عفواً يا ${currentUserData.displayName}...`, mainAnswer: "عقلي سخن ومش قادر أفكر دلوقتي." };
-            }
-        }
-
-        function renderToolResponse(container, response, responseId) {
-            const formattedAnswer = response.mainAnswer.replace(/\*\*(.*?)\*\*/g, '<strong class="text-[color:var(--accent-color)]">$1</strong>');
-            container.innerHTML = `
-                <p class="text-slate-400 italic mb-4">${response.personaIntro}</p>
-                <div class="border-t border-slate-700/50 pt-4 text-xl sm:text-2xl font-bold">${formattedAnswer}</div>
-                <div class="mt-6 flex items-center justify-center gap-6 border-t border-slate-700/50 pt-4">
-                    <button class="reaction-btn text-2xl" data-response-id="${responseId}" data-reaction="funny">😂</button>
-                    <button class="reaction-btn text-2xl" data-response-id="${responseId}" data-reaction="love">❤️</button>
-                    <button class="reaction-btn text-2xl" data-response-id="${responseId}" data-reaction="think">🤔</button>
-                    <button class="reply-btn action-icon" title="أضف تعليق"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button>
-                </div>
-                <form class="reply-form hidden mt-4 flex gap-2">
-                    <input type="text" class="reply-input flex-grow bg-slate-800 rounded-lg p-2" placeholder="اكتب تعليقك...">
-                    <button type="submit" class="submit-reply-btn bg-sky-600 px-4 rounded-lg" data-response-id="${responseId}">إرسال</button>
-                </form>
-            `;
-        }
-        
-        async function handleReaction(responseId, reactionType, comment = null) {
-            if (!responseId) return;
-            const feedbackRef = doc(db, `tool_feedback`, `${responseId}_${auth.currentUser.uid}`);
-            
-            let data = {
-                responseId: responseId,
-                userId: auth.currentUser.uid,
-                tool: currentView,
-                timestamp: serverTimestamp()
-            };
-            
-            if (reactionType) data.reaction = reactionType;
-            if (comment) data.comment = comment;
-
-            try {
-                await setDoc(feedbackRef, data, { merge: true });
-                const btnContainer = document.querySelector(`button[data-response-id="${responseId}"]`).parentElement;
-                if(btnContainer) {
-                    btnContainer.querySelectorAll('.reaction-btn').forEach(btn => {
-                        btn.classList.remove('selected');
-                        if(btn.dataset.reaction === reactionType) btn.classList.add('selected');
-                    });
-                }
-            } catch (error) {
-                console.error("Error handling reaction:", error);
-            }
-        }
-
         function showConfirmationModal(message, onConfirm) {
             document.getElementById('confirmation-message').textContent = message;
             confirmationModal.classList.remove('hidden');
@@ -930,10 +564,9 @@
                 cancelBtn.removeEventListener('click', cancelHandler);
             };
 
-            confirmBtn.addEventListener('click', confirmHandler);
-            cancelBtn.addEventListener('click', cancelHandler);
+            confirmBtn.addEventListener('click', confirmHandler, { once: true });
+            cancelBtn.addEventListener('click', cancelHandler, { once: true });
         }
-
     </script>
 </body>
 </html>
