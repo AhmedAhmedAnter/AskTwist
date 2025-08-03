@@ -41,9 +41,9 @@
             border: 1px solid var(--glass-border);
             transition: background-color 0.5s ease, border-color 0.5s ease;
         }
-        .chat-messages::-webkit-scrollbar, .chat-list::-webkit-scrollbar { width: 6px; }
-        .chat-messages::-webkit-scrollbar-track, .chat-list::-webkit-scrollbar-track { background: transparent; }
-        .chat-messages::-webkit-scrollbar-thumb, .chat-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+        .chat-messages::-webkit-scrollbar, .chat-list::-webkit-scrollbar, .tools-view-container::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-track, .chat-list::-webkit-scrollbar-track, .tools-view-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb, .chat-list::-webkit-scrollbar-thumb, .tools-view-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
         
         .pop-in { animation: pop-in 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
         @keyframes pop-in { 
@@ -61,10 +61,10 @@
         }
         
         #sidebar {
-            width: 288px; /* 72 in tailwind units */
+            width: 288px; /* w-72 */
             flex-shrink: 0;
             transition: transform 0.3s ease-in-out;
-            z-index: 100;
+            z-index: 50;
         }
 
         #main-content {
@@ -94,14 +94,12 @@
             #sidebar.open {
                 transform: translateX(0);
             }
-            #sidebar-overlay {
-                transition: opacity 0.3s ease-in-out;
-            }
         }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
 
+    <!-- All Modals -->
     <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
         <div class="glass-pane rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center pop-in">
             <h2 id="confirmation-title" class="text-2xl font-bold mb-4 text-white">هل أنت متأكد؟</h2>
@@ -112,8 +110,25 @@
             </div>
         </div>
     </div>
+    <div id="share-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="glass-pane rounded-2xl shadow-2xl w-full max-w-md p-6 text-center pop-in">
+            <h2 class="text-2xl font-bold mb-4 text-white">شارك بطاقتك</h2>
+            <canvas id="share-canvas" width="1000" height="1000" class="w-full h-auto rounded-lg border border-slate-700"></canvas>
+            <div class="flex gap-4 mt-4">
+                <a id="download-btn" href="#" download="twist-reply.png" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">تنزيل</a>
+                <button id="close-share-modal" class="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 rounded-lg transition-colors">إغلاق</button>
+            </div>
+        </div>
+    </div>
+    <div id="tools-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="glass-pane rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative pop-in">
+            <button id="close-tools-modal" class="absolute top-4 left-4 text-slate-400 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <h2 class="text-3xl font-bold text-center mb-6 text-white">أدوات تويست</h2>
+            <div id="tools-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
     
-    <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[120] p-4">
         <div class="text-center p-8 glass-pane rounded-2xl shadow-2xl pop-in max-w-sm w-full">
             <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20 mb-4">T</div>
             <h1 class="text-3xl font-bold text-white">أهلاً بك في "اسأل تويست"</h1>
@@ -150,7 +165,7 @@
         <!-- Main Content Area -->
         <main id="main-content" class="flex flex-col min-w-0">
             <header class="flex items-center justify-between p-4 border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-xl z-10">
-                 <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-fuchsia-500">اسأل تويست</h1>
+                 <h1 id="main-header-title" class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-fuchsia-500 transition-all">اسأل تويست</h1>
                  <button id="sidebar-toggle-btn" class="p-2 text-slate-300 hover:text-white">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-16 6h16" /></svg>
                  </button>
@@ -167,6 +182,7 @@
                     </form>
                 </div>
             </div>
+            <div id="tools-view-container" class="hidden flex-1 p-4 sm:p-6 overflow-y-auto"></div>
         </main>
     </div>
 
@@ -195,11 +211,19 @@
               confirmationModal = document.getElementById('confirmation-modal'),
               confirmBtn = document.getElementById('confirm-btn'),
               cancelBtn = document.getElementById('cancel-btn'),
-              openToolsModalBtn = document.getElementById('open-tools-modal-btn');
+              openToolsModalBtn = document.getElementById('open-tools-modal-btn'),
+              toolsModal = document.getElementById('tools-modal'),
+              closeToolsModalBtn = document.getElementById('close-tools-modal'),
+              toolsGrid = document.getElementById('tools-grid'),
+              toolsViewContainer = document.getElementById('tools-view-container'),
+              shareModal = document.getElementById('share-modal'),
+              shareCanvas = document.getElementById('share-canvas'),
+              downloadBtn = document.getElementById('download-btn'),
+              closeShareModalBtn = document.getElementById('close-share-modal'),
+              mainHeaderTitle = document.getElementById('main-header-title');
 
-
-        // --- Firebase & State ---
-        let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null, unsubscribeChats = null;
+        // --- State ---
+        let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null, unsubscribeChats = null, currentView = 'chat';
         
         const firebaseConfig = {
             apiKey: "AIzaSyDaCWkD_0cuGafWJAiDAFtvPAmst4PX99U",
@@ -219,7 +243,6 @@
             console.error("Firebase initialization failed.", e);
         }
         
-        // --- Sound Effects ---
         const sendSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).toDestination();
         const receiveSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
 
@@ -232,27 +255,20 @@
                 const userSnap = await getDoc(userRef);
                 if (userSnap.exists()) {
                     currentUserData = { id: user.uid, ...userSnap.data() };
-                    showApp();
-                    listenToUserChats();
                 } else {
-                    // This case is for first-time Google sign-in users
-                    // We need to create their profile.
                     const newUserProfile = { displayName: user.displayName, email: user.email, photoURL: user.photoURL, aiNotes: "مستخدم جديد، يبدو فضولياً." };
-                    await setDoc(doc(db, "users", user.uid), newUserProfile);
+                    await setDoc(userRef, newUserProfile);
                     currentUserData = { id: user.uid, ...newUserProfile };
-                    showApp();
-                    listenToUserChats();
                 }
+                showApp();
+                listenToUserChats();
             } else {
                 showLogin();
             }
         });
 
         googleSigninBtn.addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(err => {
-                console.error("Sign-in error", err);
-            });
+            signInWithPopup(auth, new GoogleAuthProvider()).catch(err => console.error("Sign-in error", err));
         });
 
         function showLogin() {
@@ -289,11 +305,25 @@
             localStorage.setItem('twist-theme', newTheme);
         }
 
+        // --- View Management ---
+        function switchView(viewName, toolData = {}) {
+            currentView = viewName;
+            const isChatView = viewName === 'chat';
+            chatView.classList.toggle('hidden', !isChatView);
+            toolsViewContainer.classList.toggle('hidden', isChatView);
+
+            if (isChatView) {
+                mainHeaderTitle.textContent = "اسأل تويست";
+            } else {
+                mainHeaderTitle.textContent = toolData.title;
+                renderToolUI(viewName, toolData);
+            }
+        }
+
         // --- Chat Management ---
         function listenToUserChats() {
             if(unsubscribeChats) unsubscribeChats();
-            const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
-            const q = query(chatsRef, orderBy("createdAt", "desc"));
+            const q = query(collection(db, `users/${auth.currentUser.uid}/chats`), orderBy("createdAt", "desc"));
             unsubscribeChats = onSnapshot(q, (snapshot) => {
                 if (snapshot.empty) {
                     createNewChat();
@@ -307,36 +337,30 @@
         }
 
         function renderChatList(chatDocs) {
-            chatList.innerHTML = '';
-            chatDocs.forEach(doc => {
+            chatList.innerHTML = chatDocs.map(doc => {
                 const chatData = doc.data();
-                const chatItem = document.createElement('div');
-                chatItem.className = 'flex items-center gap-2 group';
-                const chatButton = document.createElement('button');
-                chatButton.dataset.chatId = doc.id;
                 const isActive = doc.id === currentChatId;
-                chatButton.className = `flex-grow text-right p-2 rounded-lg truncate transition-colors ${isActive ? 'bg-sky-600/50 text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}`;
-                chatButton.textContent = chatData.title || "محادثة جديدة";
-                const deleteButton = document.createElement('button');
-                deleteButton.dataset.chatId = doc.id;
-                deleteButton.className = 'delete-chat-btn p-1 text-slate-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity';
-                deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>`;
-                chatItem.appendChild(chatButton);
-                chatItem.appendChild(deleteButton);
-                chatList.appendChild(chatItem);
-            });
+                return `
+                    <div class="flex items-center gap-2 group">
+                        <button data-chat-id="${doc.id}" class="chat-btn flex-grow text-right p-2 rounded-lg truncate transition-colors ${isActive ? 'bg-sky-600/50 text-white' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}">
+                            ${chatData.title || "محادثة جديدة"}
+                        </button>
+                        <button data-chat-id="${doc.id}" class="delete-chat-btn p-1 text-slate-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>`;
+            }).join('');
         }
         
         chatList.addEventListener('click', (e) => {
-            const chatButton = e.target.closest('button:not(.delete-chat-btn)');
+            const chatButton = e.target.closest('.chat-btn');
             const deleteButton = e.target.closest('.delete-chat-btn');
             if (deleteButton) {
                 const chatIdToDelete = deleteButton.dataset.chatId;
-                showConfirmationModal('هل أنت متأكد من حذف هذه المحادثة؟', () => {
-                    deleteChat(chatIdToDelete);
-                });
+                showConfirmationModal('هل أنت متأكد من حذف هذه المحادثة؟', () => deleteChat(chatIdToDelete));
             } else if (chatButton) {
                 const chatId = chatButton.dataset.chatId;
+                switchView('chat');
                 if (chatId !== currentChatId) switchChat(chatId);
                 if (window.innerWidth < 768) {
                     sidebar.classList.remove('open');
@@ -349,42 +373,35 @@
             try {
                 const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatIdToDelete}/messages`);
                 const messagesSnap = await getDocs(messagesRef);
-                const deletePromises = messagesSnap.docs.map(doc => deleteDoc(doc.ref));
-                await Promise.all(deletePromises);
+                await Promise.all(messagesSnap.docs.map(doc => deleteDoc(doc.ref)));
                 await deleteDoc(doc(db, `users/${auth.currentUser.uid}/chats/${chatIdToDelete}`));
                 if (currentChatId === chatIdToDelete) currentChatId = null; 
-            } catch (error) {
-                console.error("Error deleting chat:", error);
-            }
+            } catch (error) { console.error("Error deleting chat:", error); }
         }
 
         function switchChat(chatId) {
             currentChatId = chatId;
             listenToMessages(chatId);
-            // Visually update active chat without re-fetching
-            document.querySelectorAll('#chat-list button').forEach(btn => {
-                btn.classList.toggle('bg-sky-600/50', btn.dataset.chatId === chatId);
-                btn.classList.toggle('text-white', btn.dataset.chatId === chatId);
-                btn.classList.toggle('text-slate-400', btn.dataset.chatId !== chatId);
+            document.querySelectorAll('#chat-list .chat-btn').forEach(btn => {
+                const isActive = btn.dataset.chatId === chatId;
+                btn.classList.toggle('bg-sky-600/50', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('text-slate-400', !isActive);
             });
         }
 
         async function createNewChat() {
             try {
-                const chatsRef = collection(db, `users/${auth.currentUser.uid}/chats`);
-                const newChatRef = await addDoc(chatsRef, { createdAt: serverTimestamp(), title: "محادثة جديدة" });
+                const newChatRef = await addDoc(collection(db, `users/${auth.currentUser.uid}/chats`), { createdAt: serverTimestamp(), title: "محادثة جديدة" });
                 await saveMessage(`أهلاً يا ${currentUserData.displayName}. أنا تويست، كيف أخدمك اليوم؟`, 'bot', newChatRef.id);
                 switchChat(newChatRef.id);
-            } catch (error) {
-                console.error("Error creating new chat:", error);
-            }
+            } catch (error) { console.error("Error creating new chat:", error); }
         }
 
         function listenToMessages(chatId) {
             if (unsubscribeMessages) unsubscribeMessages();
             chatMessages.innerHTML = '';
-            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`);
-            const q = query(messagesRef, orderBy("timestamp"));
+            const q = query(collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`), orderBy("timestamp"));
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added") {
@@ -395,15 +412,12 @@
             });
         }
         
-        function scrollToBottom() { 
-            setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 50);
-        }
+        const scrollToBottom = () => setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 50);
 
         function addMessageToUI(text, sender, messageId) {
+            const isUser = sender === 'user';
             const messageContainer = document.createElement('div');
             messageContainer.className = 'message-wrapper pop-in w-full';
-            const isUser = sender === 'user';
-            
             messageContainer.innerHTML = `
                 <div class="flex items-start gap-3 ${isUser ? 'justify-end' : ''}">
                     ${!isUser ? `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div>` : ''}
@@ -416,9 +430,7 @@
                 </div>`;
             
             chatMessages.appendChild(messageContainer);
-            if (!isUser) {
-                animateTyping(messageContainer.querySelector('.bot-text-content'), text);
-            }
+            if (!isUser) animateTyping(messageContainer.querySelector('.bot-text-content'), text);
             scrollToBottom();
         }
         
@@ -444,17 +456,13 @@
         async function saveMessage(text, sender, chatId = currentChatId) {
             if (!chatId) return;
             try {
-                const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`);
-                return await addDoc(messagesRef, { text, sender, timestamp: serverTimestamp() });
-            } catch (error) {
-                console.error("Error saving message:", error);
-            }
+                return await addDoc(collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`), { text, sender, timestamp: serverTimestamp() });
+            } catch (error) { console.error("Error saving message:", error); }
         }
 
         async function getGeminiResponse(prompt) {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
-            const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
-            const q = query(messagesRef, orderBy("timestamp", "desc"), limit(8));
+            const q = query(collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`), orderBy("timestamp", "desc"), limit(8));
             const snapshot = await getDocs(q);
             const history = snapshot.docs.reverse().map(doc => ({ role: doc.data().sender === 'user' ? 'user' : 'model', parts: [{ text: doc.data().text }] }));
             
@@ -528,44 +536,161 @@
             submitBtn.disabled = false;
             userInput.focus();
         }
+
+        // --- Tools Functionality ---
+        const ALL_TOOLS = {
+            dream: { title: "مترجم الأحلام", icon: "🌙", desc: "أخبرني بحلمك، وسأكشف لك عن معانيه الخفية (والعبثية).", placeholder: "رأيت في المنام أنني أطير...", btnText: "فسّر الحلم", inputType: "textarea" },
+            excuse: { title: "مولّد الأعذار", icon: "🏃‍♂️", desc: "لماذا تريد عذراً؟ (مثال: للتأخر عن العمل)", placeholder: "للتأخر عن العمل...", btnText: "اخترع لي عذراً", inputType: "input" },
+            decision: { title: "صانع القرار", icon: "🤔", desc: "أعطني خيارين، وسأختار لك الأنسب... بوجهة نظري طبعاً.", placeholder1: "الخيار الأول", placeholder2: "الخيار الثاني", btnText: "اختر لي يا تويست", inputType: "dual-input" },
+            poet: { title: "شاعر الذكاء الاصطناعي", icon: "�", desc: "اطلب قصيدة عن أي موضوع، واستمتع بالنتيجة.", placeholder: "قصيدة عن حب الشاورما...", btnText: "اكتب يا تويست", inputType: "input" },
+            compliment: { title: "مولّد الإطراءات", icon: "😏", desc: "لمن تريد توجيه هذه المجاملة الملتوية؟", placeholder: "لمديري في الشغل...", btnText: "جامل يا تويست", inputType: "input" },
+            horoscope: { title: "الأبراج الملتوية", icon: "✨", desc: "ما هو برجك؟ لأخبرك بما لا تريد سماعه.", placeholder: "مثال: برج الجوزاء", btnText: "اكشف لي طالعي", inputType: "input" },
+        };
+
+        function renderToolsGrid() {
+            toolsGrid.innerHTML = Object.entries(ALL_TOOLS).map(([key, {title, icon}]) => `
+                <button class="tool-btn-grid glass-pane p-4 rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-slate-700/50 transition-all transform hover:scale-105" data-tool="${key}">
+                    <span class="text-4xl">${icon}</span>
+                    <span class="font-semibold text-center text-white">${title}</span>
+                </button>
+            `).join('');
+        }
+
+        toolsGrid.addEventListener('click', (e) => {
+            const toolBtn = e.target.closest('.tool-btn-grid');
+            if (toolBtn) {
+                const toolName = toolBtn.dataset.tool;
+                switchView(toolName, ALL_TOOLS[toolName]);
+                toolsModal.classList.add('hidden');
+            }
+        });
         
+        function renderToolUI(toolName, toolData) {
+            let inputHtml = '';
+            if (toolData.inputType === 'textarea') {
+                inputHtml = `<textarea id="tool-input" class="w-full h-40 glass-pane rounded-xl p-4 text-lg bg-slate-800/50 border-slate-700 border" placeholder="${toolData.placeholder}"></textarea>`;
+            } else if (toolData.inputType === 'input') {
+                inputHtml = `<input type="text" id="tool-input" class="w-full glass-pane rounded-xl p-4 text-lg text-center bg-slate-800/50 border-slate-700 border" placeholder="${toolData.placeholder}">`;
+            } else if (toolData.inputType === 'dual-input') {
+                inputHtml = `<div class="flex flex-col sm:flex-row gap-4"><input type="text" id="tool-input-1" class="w-full glass-pane rounded-xl p-4 text-lg text-center bg-slate-800/50 border-slate-700 border" placeholder="${toolData.placeholder1}"><input type="text" id="tool-input-2" class="w-full glass-pane rounded-xl p-4 text-lg text-center bg-slate-800/50 border-slate-700 border" placeholder="${toolData.placeholder2}"></div>`;
+            }
+            
+            toolsViewContainer.innerHTML = `
+                <div class="pop-in text-center max-w-2xl mx-auto">
+                    <p class="text-slate-400 mb-6">${toolData.desc}</p>
+                    <div class="space-y-4">${inputHtml}</div>
+                    <button id="tool-submit-btn" class="mt-4 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">${toolData.btnText}</button>
+                    <div id="tool-result-container" class="mt-6 glass-pane rounded-xl min-h-[100px] hidden text-right p-6"></div>
+                </div>`;
+        }
+        
+        // Event delegation for tools view
+        toolsViewContainer.addEventListener('click', (e) => {
+            if (e.target.id === 'tool-submit-btn') {
+                handleToolSubmit(currentView);
+            }
+        });
+
+        async function handleToolSubmit(toolName) {
+            const resultDiv = document.getElementById('tool-result-container');
+            const toolData = ALL_TOOLS[toolName];
+            let input = '', instruction = '';
+
+            if (toolData.inputType === 'dual-input') {
+                const input1 = document.getElementById('tool-input-1').value;
+                const input2 = document.getElementById('tool-input-2').value;
+                if (!input1 || !input2) return;
+                input = `${input1} و ${input2}`;
+            } else {
+                input = document.getElementById('tool-input').value;
+            }
+            if (!input) return;
+            
+            switch(toolName) {
+                case 'dream': instruction = `أنت "تويست"، مترجم أحلام مصري ساخر. فسر حلم المستخدم "${input}" بطريقة عبثية ومضحكة.`; break;
+                case 'excuse': instruction = `أنت "تويست"، خبير اختراع الأعذار. المستخدم يحتاج عذراً لـ "${input}". اخترع له عذراً مبتكراً ومستفزاً.`; break;
+                case 'decision': instruction = `أنت "تويست"، حكيم القرارات. المستخدم حائر بين الخيارين. اختر له أحدهما وقدم سبباً ساخراً. الخياران: ${input}`; break;
+                case 'poet': instruction = `أنت "تويست"، شاعر مصري فاشل. اكتب قصيدة قصيرة (بيتين أو ثلاثة) عن "${input}". يجب أن تكون القصيدة مضحكة وغير موزونة.`; break;
+                case 'compliment': instruction = `أنت "تويست"، خبير المجاملات المبطنة. المستخدم يريد مجاملة لـ "${input}". قدم له مجاملة تبدو جيدة في الظاهر لكنها إهانة مبطنة.`; break;
+                case 'horoscope': instruction = `أنت "تويست"، عالم فلكي نصاب. المستخدم من برج "${input}". اكتب له حظه اليومي بشكل ساخر وغير منطقي إطلاقاً.`; break;
+            }
+            instruction += ` افصل ردك إلى جزئين: مقدمة ساخرة، ثم الإجابة الرئيسية مع تظليل جزء مهم منها باستخدام **...**`;
+
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `<div class="animate-pulse text-center p-4">تويست يخلط المكونات...</div>`;
+            
+            const response = await getToolResponse(instruction);
+            renderToolResponse(resultDiv, response);
+        }
+
+        async function getToolResponse(instruction) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: instruction }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "personaIntro": { "type": "STRING" },
+                            "mainAnswer": { "type": "STRING" }
+                        },
+                        required: ["personaIntro", "mainAnswer"]
+                    }
+                }
+            };
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                return JSON.parse(result.candidates[0].content.parts[0].text);
+            } catch (e) {
+                console.error("Tool response error", e);
+                return { personaIntro: `عفواً يا ${currentUserData.displayName}...`, mainAnswer: "عقلي سخن ومش قادر أفكر دلوقتي." };
+            }
+        }
+
+        function renderToolResponse(container, response) {
+            const formattedAnswer = response.mainAnswer.replace(/\*\*(.*?)\*\*/g, '<strong class="text-[color:var(--accent-color)]">$1</strong>');
+            container.innerHTML = `
+                <p class="text-slate-400 italic mb-4">${response.personaIntro}</p>
+                <div class="border-t border-slate-700/50 pt-4 text-xl sm:text-2xl font-bold">${formattedAnswer}</div>
+            `;
+        }
+
         // --- Event Listeners & Initializers ---
         chatForm.addEventListener('submit', handleSubmit);
-        newChatBtn.addEventListener('click', () => createNewChat());
+        newChatBtn.addEventListener('click', () => {
+            switchView('chat');
+            createNewChat();
+        });
         sidebarToggleBtn.addEventListener('click', () => {
-            const isMobile = window.innerWidth < 768;
-            if (isMobile) {
+            if (window.innerWidth < 768) {
                 sidebar.classList.toggle('open');
                 sidebarOverlay.classList.toggle('hidden');
             } else {
                 sidebar.classList.toggle('collapsed');
-                mainContent.classList.toggle('md:mr-72');
+                mainContent.classList.toggle('md:mr-[-288px]');
             }
         });
         sidebarOverlay.addEventListener('click', () => {
             sidebar.classList.remove('open');
             sidebarOverlay.classList.add('hidden');
         });
+        openToolsModalBtn.addEventListener('click', () => {
+            renderToolsGrid();
+            toolsModal.classList.remove('hidden');
+        });
+        closeToolsModalBtn.addEventListener('click', () => toolsModal.classList.add('hidden'));
+        closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
         
         function showConfirmationModal(message, onConfirm) {
             document.getElementById('confirmation-message').textContent = message;
             confirmationModal.classList.remove('hidden');
-
-            const confirmHandler = () => {
+            confirmBtn.onclick = () => {
                 onConfirm();
                 confirmationModal.classList.add('hidden');
-                confirmBtn.removeEventListener('click', confirmHandler);
-                cancelBtn.removeEventListener('click', cancelHandler);
             };
-
-            const cancelHandler = () => {
-                confirmationModal.classList.add('hidden');
-                confirmBtn.removeEventListener('click', confirmHandler);
-                cancelBtn.removeEventListener('click', cancelHandler);
-            };
-
-            confirmBtn.addEventListener('click', confirmHandler, { once: true });
-            cancelBtn.addEventListener('click', cancelHandler, { once: true });
+            cancelBtn.onclick = () => confirmationModal.classList.add('hidden');
         }
     </script>
 </body>
