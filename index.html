@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Twist AI | New Funny Tool</title>
+    <title>Twist AI | New AI Funny Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="shortcut icon" href="./fav.svg" type="image/x-icon" />
@@ -831,7 +831,11 @@
                 }">
                     ${
                       !isUser
-                        ? `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-lg">T</div>`
+                        ? `<img
+          src="./icon-cir.svg"
+          alt="Twist Logo"
+          class="w-10 h-10 rounded-full flex-shrink-0"
+        />`
                         : ""
                     }
                     <div class="flex flex-col ${
@@ -1480,7 +1484,7 @@
         ctx.textBaseline = "top";
 
         // Draw Logo
-        ctx.font = "bold 80px Cairo";
+        ctx.font = "bold 40px Cairo";
         ctx.fillStyle = getComputedStyle(document.body).getPropertyValue(
           "--accent-color"
         );
@@ -1488,12 +1492,12 @@
 
         // Draw Line 1 (User's Prompt)
         ctx.fillStyle = "#cbd5e1";
-        ctx.font = "50px Cairo";
+        ctx.font = "25px Cairo";
         wrapText(ctx, stripMarkdown(line1), 600, 250, 1000, 70);
 
         // Draw Line 2 (Twist's Response)
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 65px Cairo";
+        ctx.font = "bold 32px Cairo";
         wrapText(ctx, stripMarkdown(line2), 600, 500, 1000, 90);
 
         // Draw Footer
