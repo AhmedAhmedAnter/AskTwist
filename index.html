@@ -1267,7 +1267,7 @@
                 <p class="text-slate-400 italic mb-4">${
                   response.personaIntro
                 }</p>
-                <div class="border-t border-slate-700/50 pt-4 text-xl sm:text-2xl font-bold">${formatAIResponse(
+                <div class="border-t border-slate-700/50 pt-4 text-lg sm:text-xl font-normal">${formatAIResponse(
                   response.mainAnswer
                 )}</div>
                 <div class="mt-6 flex items-center justify-center gap-6 border-t border-slate-700/50 pt-4">
@@ -1484,7 +1484,7 @@
         ctx.textBaseline = "top";
 
         // Draw Logo
-        ctx.font = "bold 40px Cairo";
+        ctx.font = "bold 70px Cairo";
         ctx.fillStyle = getComputedStyle(document.body).getPropertyValue(
           "--accent-color"
         );
@@ -1492,18 +1492,18 @@
 
         // Draw Line 1 (User's Prompt)
         ctx.fillStyle = "#cbd5e1";
-        ctx.font = "25px Cairo";
+        ctx.font = "40px Cairo";
         wrapText(ctx, stripMarkdown(line1), 600, 250, 1000, 70);
 
         // Draw Line 2 (Twist's Response)
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 32px Cairo";
+        ctx.font = "bold 55px Cairo";
         wrapText(ctx, stripMarkdown(line2), 600, 500, 1000, 90);
 
         // Draw Footer
         ctx.fillStyle = "#94a3b8";
         ctx.font = "35px Cairo";
-        ctx.fillText("asstwist.web.app", 600, 1100);
+        ctx.fillText("ask-twist.web.app", 600, 1100);
 
         ALL_DOM_ELEMENTS.downloadBtn.href =
           ALL_DOM_ELEMENTS.shareCanvas.toDataURL("image/png");
