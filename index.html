@@ -54,6 +54,14 @@
         .blinking-cursor { animation: blink 1s step-end infinite; }
         @keyframes blink { from, to { opacity: 0; } 50% { opacity: 1; } }
         
+        .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+        .confetti { position: absolute; width: 10px; height: 20px; opacity: 0.9; animation: fall 4s linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+
+        .reaction-btn { transition: transform 0.2s, filter 0.2s; }
+        .reaction-btn:hover { transform: scale(1.2); }
+        .reaction-btn.selected { transform: scale(1.2); filter: drop-shadow(0 0 5px var(--accent-color)); }
+
         #app-container {
             display: flex;
             height: 100vh;
@@ -72,32 +80,19 @@
             transition: margin-right 0.3s ease-in-out;
         }
 
-        /* Desktop layout */
         @media (min-width: 768px) {
-            #sidebar.collapsed {
-                transform: translateX(100%);
-            }
-            #sidebar.collapsed + #main-content {
-                margin-right: -288px;
-            }
+            #sidebar.collapsed { transform: translateX(100%); }
+            #sidebar.collapsed + #main-content { margin-right: -288px; }
         }
 
-        /* Mobile layout */
         @media (max-width: 767px) {
-            #sidebar {
-                position: fixed;
-                top: 0;
-                right: 0;
-                height: 100%;
-                transform: translateX(100%);
-            }
-            #sidebar.open {
-                transform: translateX(0);
-            }
+            #sidebar { position: fixed; top: 0; right: 0; height: 100%; transform: translateX(100%); }
+            #sidebar.open { transform: translateX(0); }
         }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
+    <div id="confetti-container"></div>
 
     <!-- All Modals -->
     <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
@@ -127,8 +122,17 @@
             <div id="tools-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
         </div>
     </div>
-    
-    <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[120] p-4">
+    <div id="name-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[120] p-4">
+        <div class="p-8 glass-pane rounded-2xl shadow-2xl w-full max-w-sm pop-in">
+            <h2 class="text-2xl font-bold text-center mb-2 text-white">آخر خطوة!</h2>
+            <p class="text-slate-400 text-center mb-6">ما هو الاسم الذي تود أن نناديك به؟</p>
+            <form id="name-form">
+                <input type="text" id="name-input" class="w-full bg-slate-900/70 border-2 border-slate-700 rounded-xl py-3 px-4 text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 text-center" placeholder="اكتب اسمك هنا" required>
+                <button type="submit" class="w-full mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-lg transition-colors">حفظ والمتابعة</button>
+            </form>
+        </div>
+    </div>
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md flex items-center justify-center z-[130] p-4">
         <div class="text-center p-8 glass-pane rounded-2xl shadow-2xl pop-in max-w-sm w-full">
             <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center text-5xl font-bold shadow-2xl shadow-sky-500/20 mb-4">T</div>
             <h1 class="text-3xl font-bold text-white">أهلاً بك في "اسأل تويست"</h1>
@@ -143,7 +147,6 @@
     <!-- Main App Container -->
     <div id="app-container" class="hidden">
         <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black/60 z-40"></div>
-        <!-- Sidebar -->
         <aside id="sidebar" class="bg-slate-900/30 backdrop-blur-xl border-l border-slate-800/50 flex flex-col p-4 h-full">
             <div class="flex-grow flex flex-col min-h-0">
                 <button id="newChatBtn" class="w-full text-right bg-sky-600/80 hover:bg-sky-500 text-white rounded-lg p-3 mb-4 transition-all flex items-center gap-3 font-semibold shadow-lg shadow-sky-500/10">
@@ -162,7 +165,6 @@
             <div id="user-profile" class="border-t border-slate-700/50 pt-4 flex items-center gap-3"></div>
         </aside>
 
-        <!-- Main Content Area -->
         <main id="main-content" class="flex flex-col min-w-0">
             <header class="flex items-center justify-between p-4 border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-xl z-10">
                  <h1 id="main-header-title" class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-fuchsia-500 transition-all">اسأل تويست</h1>
@@ -187,42 +189,45 @@
     </div>
 
     <script type="module">
-        // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, setDoc, query, orderBy, limit, onSnapshot, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- DOM Elements ---
-        const loginOverlay = document.getElementById('login-overlay'),
-              googleSigninBtn = document.getElementById('google-signin-btn'),
-              appContainer = document.getElementById('app-container'),
-              userProfile = document.getElementById('user-profile'),
-              chatList = document.getElementById('chat-list'),
-              chatView = document.getElementById('chat-view'),
-              userInput = document.getElementById('userInput'),
-              chatForm = document.getElementById('chat-form'),
-              submitBtn = document.getElementById('submitBtn'),
-              chatMessages = document.getElementById('chat-messages'),
-              newChatBtn = document.getElementById('newChatBtn'),
-              sidebarToggleBtn = document.getElementById('sidebar-toggle-btn'),
-              sidebar = document.getElementById('sidebar'),
-              mainContent = document.getElementById('main-content'),
-              sidebarOverlay = document.getElementById('sidebar-overlay'),
-              confirmationModal = document.getElementById('confirmation-modal'),
-              confirmBtn = document.getElementById('confirm-btn'),
-              cancelBtn = document.getElementById('cancel-btn'),
-              openToolsModalBtn = document.getElementById('open-tools-modal-btn'),
-              toolsModal = document.getElementById('tools-modal'),
-              closeToolsModalBtn = document.getElementById('close-tools-modal'),
-              toolsGrid = document.getElementById('tools-grid'),
-              toolsViewContainer = document.getElementById('tools-view-container'),
-              shareModal = document.getElementById('share-modal'),
-              shareCanvas = document.getElementById('share-canvas'),
-              downloadBtn = document.getElementById('download-btn'),
-              closeShareModalBtn = document.getElementById('close-share-modal'),
-              mainHeaderTitle = document.getElementById('main-header-title');
+        const ALL_DOM_ELEMENTS = {
+            loginOverlay: document.getElementById('login-overlay'),
+            googleSigninBtn: document.getElementById('google-signin-btn'),
+            appContainer: document.getElementById('app-container'),
+            userProfile: document.getElementById('user-profile'),
+            chatList: document.getElementById('chat-list'),
+            chatView: document.getElementById('chat-view'),
+            userInput: document.getElementById('userInput'),
+            chatForm: document.getElementById('chat-form'),
+            submitBtn: document.getElementById('submitBtn'),
+            chatMessages: document.getElementById('chat-messages'),
+            newChatBtn: document.getElementById('newChatBtn'),
+            sidebarToggleBtn: document.getElementById('sidebar-toggle-btn'),
+            sidebar: document.getElementById('sidebar'),
+            mainContent: document.getElementById('main-content'),
+            sidebarOverlay: document.getElementById('sidebar-overlay'),
+            confirmationModal: document.getElementById('confirmation-modal'),
+            confirmBtn: document.getElementById('confirm-btn'),
+            cancelBtn: document.getElementById('cancel-btn'),
+            openToolsModalBtn: document.getElementById('open-tools-modal-btn'),
+            toolsModal: document.getElementById('tools-modal'),
+            closeToolsModalBtn: document.getElementById('close-tools-modal'),
+            toolsGrid: document.getElementById('tools-grid'),
+            toolsViewContainer: document.getElementById('tools-view-container'),
+            shareModal: document.getElementById('share-modal'),
+            shareCanvas: document.getElementById('share-canvas'),
+            downloadBtn: document.getElementById('download-btn'),
+            closeShareModalBtn: document.getElementById('close-share-modal'),
+            mainHeaderTitle: document.getElementById('main-header-title'),
+            nameModal: document.getElementById('name-modal'),
+            nameForm: document.getElementById('name-form'),
+            nameInput: document.getElementById('name-input'),
+            confettiContainer: document.getElementById('confetti-container'),
+        };
 
-        // --- State ---
         let db, auth, currentUserData = null, currentChatId = null, unsubscribeMessages = null, unsubscribeChats = null, currentView = 'chat';
         
         const firebaseConfig = {
@@ -239,14 +244,12 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-        } catch (e) { 
-            console.error("Firebase initialization failed.", e);
-        }
+        } catch (e) { console.error("Firebase initialization failed.", e); }
         
         const sendSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).toDestination();
         const receiveSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
+        const amplifySynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination();
 
-        // --- Auth & UI Setup ---
         onAuthStateChanged(auth, async (user) => {
             if (unsubscribeChats) unsubscribeChats();
             if (unsubscribeMessages) unsubscribeMessages();
@@ -255,30 +258,44 @@
                 const userSnap = await getDoc(userRef);
                 if (userSnap.exists()) {
                     currentUserData = { id: user.uid, ...userSnap.data() };
+                    showApp();
+                    listenToUserChats();
                 } else {
-                    const newUserProfile = { displayName: user.displayName, email: user.email, photoURL: user.photoURL, aiNotes: "مستخدم جديد، يبدو فضولياً." };
-                    await setDoc(userRef, newUserProfile);
-                    currentUserData = { id: user.uid, ...newUserProfile };
+                    ALL_DOM_ELEMENTS.loginOverlay.classList.add('hidden');
+                    ALL_DOM_ELEMENTS.nameInput.value = user.displayName;
+                    ALL_DOM_ELEMENTS.nameModal.classList.remove('hidden');
                 }
-                showApp();
-                listenToUserChats();
             } else {
                 showLogin();
             }
         });
 
-        googleSigninBtn.addEventListener('click', () => {
+        ALL_DOM_ELEMENTS.googleSigninBtn.addEventListener('click', () => {
             signInWithPopup(auth, new GoogleAuthProvider()).catch(err => console.error("Sign-in error", err));
         });
 
+        ALL_DOM_ELEMENTS.nameForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            const displayName = ALL_DOM_ELEMENTS.nameInput.value.trim();
+            if (user && displayName) {
+                const newUserProfile = { displayName, email: user.email, photoURL: user.photoURL, aiNotes: "مستخدم جديد، يبدو فضولياً." };
+                await setDoc(doc(db, "users", user.uid), newUserProfile);
+                currentUserData = { id: user.uid, ...newUserProfile };
+                ALL_DOM_ELEMENTS.nameModal.classList.add('hidden');
+                showApp();
+                listenToUserChats();
+            }
+        });
+
         function showLogin() {
-            loginOverlay.classList.remove('hidden');
-            appContainer.classList.add('hidden');
+            ALL_DOM_ELEMENTS.loginOverlay.classList.remove('hidden');
+            ALL_DOM_ELEMENTS.appContainer.classList.add('hidden');
         }
 
         function showApp() {
-            loginOverlay.classList.add('hidden');
-            appContainer.classList.remove('hidden');
+            ALL_DOM_ELEMENTS.loginOverlay.classList.add('hidden');
+            ALL_DOM_ELEMENTS.appContainer.classList.remove('hidden');
             updateUserProfileUI();
             const savedTheme = localStorage.getItem('twist-theme') || 'default';
             document.body.className = `bg-slate-950 text-slate-200 ${savedTheme}`;
@@ -286,7 +303,7 @@
         
         function updateUserProfileUI() {
             if (!currentUserData) return;
-            userProfile.innerHTML = `
+            ALL_DOM_ELEMENTS.userProfile.innerHTML = `
                 <img src="${currentUserData.photoURL}" alt="User Avatar" class="w-10 h-10 rounded-full border-2" style="border-color: var(--accent-color);">
                 <span class="font-semibold flex-grow truncate text-white">${currentUserData.displayName}</span>
                 <button id="theme-switcher" title="تغيير المظهر" class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg></button>
@@ -305,22 +322,20 @@
             localStorage.setItem('twist-theme', newTheme);
         }
 
-        // --- View Management ---
         function switchView(viewName, toolData = {}) {
             currentView = viewName;
             const isChatView = viewName === 'chat';
-            chatView.classList.toggle('hidden', !isChatView);
-            toolsViewContainer.classList.toggle('hidden', isChatView);
+            ALL_DOM_ELEMENTS.chatView.classList.toggle('hidden', !isChatView);
+            ALL_DOM_ELEMENTS.toolsViewContainer.classList.toggle('hidden', isChatView);
 
             if (isChatView) {
-                mainHeaderTitle.textContent = "اسأل تويست";
+                ALL_DOM_ELEMENTS.mainHeaderTitle.textContent = "اسأل تويست";
             } else {
-                mainHeaderTitle.textContent = toolData.title;
+                ALL_DOM_ELEMENTS.mainHeaderTitle.textContent = toolData.title;
                 renderToolUI(viewName, toolData);
             }
         }
 
-        // --- Chat Management ---
         function listenToUserChats() {
             if(unsubscribeChats) unsubscribeChats();
             const q = query(collection(db, `users/${auth.currentUser.uid}/chats`), orderBy("createdAt", "desc"));
@@ -337,7 +352,7 @@
         }
 
         function renderChatList(chatDocs) {
-            chatList.innerHTML = chatDocs.map(doc => {
+            ALL_DOM_ELEMENTS.chatList.innerHTML = chatDocs.map(doc => {
                 const chatData = doc.data();
                 const isActive = doc.id === currentChatId;
                 return `
@@ -352,7 +367,7 @@
             }).join('');
         }
         
-        chatList.addEventListener('click', (e) => {
+        ALL_DOM_ELEMENTS.chatList.addEventListener('click', (e) => {
             const chatButton = e.target.closest('.chat-btn');
             const deleteButton = e.target.closest('.delete-chat-btn');
             if (deleteButton) {
@@ -363,8 +378,8 @@
                 switchView('chat');
                 if (chatId !== currentChatId) switchChat(chatId);
                 if (window.innerWidth < 768) {
-                    sidebar.classList.remove('open');
-                    sidebarOverlay.classList.add('hidden');
+                    ALL_DOM_ELEMENTS.sidebar.classList.remove('open');
+                    ALL_DOM_ELEMENTS.sidebarOverlay.classList.add('hidden');
                 }
             }
         });
@@ -400,7 +415,7 @@
 
         function listenToMessages(chatId) {
             if (unsubscribeMessages) unsubscribeMessages();
-            chatMessages.innerHTML = '';
+            ALL_DOM_ELEMENTS.chatMessages.innerHTML = '';
             const q = query(collection(db, `users/${auth.currentUser.uid}/chats/${chatId}/messages`), orderBy("timestamp"));
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
@@ -412,7 +427,7 @@
             });
         }
         
-        const scrollToBottom = () => setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 50);
+        const scrollToBottom = () => setTimeout(() => ALL_DOM_ELEMENTS.chatMessages.scrollTop = ALL_DOM_ELEMENTS.chatMessages.scrollHeight, 50);
 
         function addMessageToUI(text, sender, messageId) {
             const isUser = sender === 'user';
@@ -425,11 +440,17 @@
                         <div class="p-3 rounded-xl shadow-md ${isUser ? 'text-white' : 'bg-slate-700/80 glass-pane'} text-right" ${isUser ? `style="background-color: var(--user-bubble-color);"` : ''}>
                             <p class="bot-text-content whitespace-pre-wrap">${isUser ? text : ''}</p>
                         </div>
+                        ${!isUser ? `
+                        <div class="flex items-center gap-3 mt-2">
+                            <button class="action-icon play-audio-btn" data-text="${text}" title="استمع للرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg></button>
+                            <button class="action-icon share-card-btn" data-message-id="${messageId}" title="مشاركة الرد"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg></button>
+                            <button class="action-icon amplify-btn" data-message-id="${messageId}" title="زوّدها يا تويست"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 011-1h.5a1.5 1.5 0 000-3H6a1 1 0 01-1-1V8a1 1 0 011-1h3a1 1 0 001-1v-.5z" /></svg></button>
+                        </div>` : ''}
                     </div>
                     ${isUser ? `<img src="${currentUserData.photoURL}" class="w-10 h-10 rounded-full flex-shrink-0" alt="User Avatar">` : ''}
                 </div>`;
             
-            chatMessages.appendChild(messageContainer);
+            ALL_DOM_ELEMENTS.chatMessages.appendChild(messageContainer);
             if (!isUser) animateTyping(messageContainer.querySelector('.bot-text-content'), text);
             scrollToBottom();
         }
@@ -460,22 +481,23 @@
             } catch (error) { console.error("Error saving message:", error); }
         }
 
-        async function getGeminiResponse(prompt) {
+        async function getGeminiResponse(prompt, historyOverride = null, customSystemInstruction = null) {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
             const q = query(collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`), orderBy("timestamp", "desc"), limit(8));
             const snapshot = await getDocs(q);
-            const history = snapshot.docs.reverse().map(doc => ({ role: doc.data().sender === 'user' ? 'user' : 'model', parts: [{ text: doc.data().text }] }));
+            const history = historyOverride || snapshot.docs.reverse().map(doc => ({ role: doc.data().sender === 'user' ? 'user' : 'model', parts: [{ text: doc.data().text }] }));
             
-            const systemInstruction = `أنت "تويست"، بوت مصري ذكي ودمه تقيل. مهمتك ترد على المستخدم اللي اسمه "${currentUserData.displayName}" بأسلوب ساخر وفيه قصف جبهات وطحن خواطر. لازم ردودك تكون قصيرة، غير متوقعة، وباللهجة المصرية. لو طلب منك طلب مباشر زي "قول نكتة"، نفذ الطلب بس بأسلوبك الساخر. ملاحظاتك الحالية عن المستخدم: "${currentUserData.aiNotes}"`;
+            const systemInstruction = customSystemInstruction || `أنت "تويست"، بوت مصري ذكي ودمه تقيل. مهمتك ترد على المستخدم اللي اسمه "${currentUserData.displayName}" بأسلوب ساخر وفيه قصف جبهات وطحن خواطر. لازم ردودك تكون قصيرة، غير متوقعة، وباللهجة المصرية. لو طلب منك طلب مباشر زي "قول نكتة"، نفذ الطلب بس بأسلوبك الساخر. ملاحظاتك الحالية عن المستخدم: "${currentUserData.aiNotes}"`;
             
-            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "تمام، أنا جاهز." }] }, ...history, { role: 'user', parts: [{ text: prompt }] } ];
+            const contents = [ { role: 'user', parts: [{ text: systemInstruction }] }, { role: 'model', parts: [{ text: "تمام، أنا جاهز." }] }, ...history ];
+            if (!historyOverride) contents.push({ role: 'user', parts: [{ text: prompt }] });
 
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents }) });
                 if (!response.ok) throw new Error(`API error: ${response.status}`);
                 const result = await response.json();
                 const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "عفواً، حدث خطأ ما.";
-                updateUserAINotes(prompt, aiResponse);
+                if (!historyOverride) updateUserAINotes(prompt, aiResponse);
                 return aiResponse;
             } catch (error) {
                 console.error("Gemini API error:", error);
@@ -510,10 +532,10 @@
 
         async function handleSubmit(event) {
             event.preventDefault();
-            const text = userInput.value.trim();
+            const text = ALL_DOM_ELEMENTS.userInput.value.trim();
             if (!text || !currentChatId) return;
-            submitBtn.disabled = true;
-            userInput.value = '';
+            ALL_DOM_ELEMENTS.submitBtn.disabled = true;
+            ALL_DOM_ELEMENTS.userInput.value = '';
             
             const messagesRef = collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`);
             const messagesSnap = await getDocs(messagesRef);
@@ -533,22 +555,21 @@
             await saveMessage(responseText, 'bot');
             receiveSynth.triggerAttackRelease("G5", "8n", Tone.now() + 0.1);
             
-            submitBtn.disabled = false;
-            userInput.focus();
+            ALL_DOM_ELEMENTS.submitBtn.disabled = false;
+            ALL_DOM_ELEMENTS.userInput.focus();
         }
 
-        // --- Tools Functionality ---
         const ALL_TOOLS = {
             dream: { title: "مترجم الأحلام", icon: "🌙", desc: "أخبرني بحلمك، وسأكشف لك عن معانيه الخفية (والعبثية).", placeholder: "رأيت في المنام أنني أطير...", btnText: "فسّر الحلم", inputType: "textarea" },
             excuse: { title: "مولّد الأعذار", icon: "🏃‍♂️", desc: "لماذا تريد عذراً؟ (مثال: للتأخر عن العمل)", placeholder: "للتأخر عن العمل...", btnText: "اخترع لي عذراً", inputType: "input" },
             decision: { title: "صانع القرار", icon: "🤔", desc: "أعطني خيارين، وسأختار لك الأنسب... بوجهة نظري طبعاً.", placeholder1: "الخيار الأول", placeholder2: "الخيار الثاني", btnText: "اختر لي يا تويست", inputType: "dual-input" },
-            poet: { title: "شاعر الذكاء الاصطناعي", icon: "�", desc: "اطلب قصيدة عن أي موضوع، واستمتع بالنتيجة.", placeholder: "قصيدة عن حب الشاورما...", btnText: "اكتب يا تويست", inputType: "input" },
+            poet: { title: "شاعر الذكاء الاصطناعي", icon: "📜", desc: "اطلب قصيدة عن أي موضوع، واستمتع بالنتيجة.", placeholder: "قصيدة عن حب الشاورما...", btnText: "اكتب يا تويست", inputType: "input" },
             compliment: { title: "مولّد الإطراءات", icon: "😏", desc: "لمن تريد توجيه هذه المجاملة الملتوية؟", placeholder: "لمديري في الشغل...", btnText: "جامل يا تويست", inputType: "input" },
             horoscope: { title: "الأبراج الملتوية", icon: "✨", desc: "ما هو برجك؟ لأخبرك بما لا تريد سماعه.", placeholder: "مثال: برج الجوزاء", btnText: "اكشف لي طالعي", inputType: "input" },
         };
 
         function renderToolsGrid() {
-            toolsGrid.innerHTML = Object.entries(ALL_TOOLS).map(([key, {title, icon}]) => `
+            ALL_DOM_ELEMENTS.toolsGrid.innerHTML = Object.entries(ALL_TOOLS).map(([key, {title, icon}]) => `
                 <button class="tool-btn-grid glass-pane p-4 rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-slate-700/50 transition-all transform hover:scale-105" data-tool="${key}">
                     <span class="text-4xl">${icon}</span>
                     <span class="font-semibold text-center text-white">${title}</span>
@@ -556,12 +577,12 @@
             `).join('');
         }
 
-        toolsGrid.addEventListener('click', (e) => {
+        ALL_DOM_ELEMENTS.toolsGrid.addEventListener('click', (e) => {
             const toolBtn = e.target.closest('.tool-btn-grid');
             if (toolBtn) {
                 const toolName = toolBtn.dataset.tool;
                 switchView(toolName, ALL_TOOLS[toolName]);
-                toolsModal.classList.add('hidden');
+                ALL_DOM_ELEMENTS.toolsModal.classList.add('hidden');
             }
         });
         
@@ -575,7 +596,7 @@
                 inputHtml = `<div class="flex flex-col sm:flex-row gap-4"><input type="text" id="tool-input-1" class="w-full glass-pane rounded-xl p-4 text-lg text-center bg-slate-800/50 border-slate-700 border" placeholder="${toolData.placeholder1}"><input type="text" id="tool-input-2" class="w-full glass-pane rounded-xl p-4 text-lg text-center bg-slate-800/50 border-slate-700 border" placeholder="${toolData.placeholder2}"></div>`;
             }
             
-            toolsViewContainer.innerHTML = `
+            ALL_DOM_ELEMENTS.toolsViewContainer.innerHTML = `
                 <div class="pop-in text-center max-w-2xl mx-auto">
                     <p class="text-slate-400 mb-6">${toolData.desc}</p>
                     <div class="space-y-4">${inputHtml}</div>
@@ -584,10 +605,15 @@
                 </div>`;
         }
         
-        // Event delegation for tools view
-        toolsViewContainer.addEventListener('click', (e) => {
-            if (e.target.id === 'tool-submit-btn') {
-                handleToolSubmit(currentView);
+        ALL_DOM_ELEMENTS.toolsViewContainer.addEventListener('click', (e) => {
+            if (e.target.id === 'tool-submit-btn') handleToolSubmit(currentView);
+            if (e.target.closest('.reaction-btn')) {
+                const btn = e.target.closest('.reaction-btn');
+                handleReaction(btn.dataset.responseId, btn.dataset.reaction);
+            }
+            if (e.target.closest('.download-tool-btn')) {
+                const btn = e.target.closest('.download-tool-btn');
+                generateToolShareCard(btn.dataset.prompt, btn.dataset.response);
             }
         });
 
@@ -620,7 +646,10 @@
             resultDiv.innerHTML = `<div class="animate-pulse text-center p-4">تويست يخلط المكونات...</div>`;
             
             const response = await getToolResponse(instruction);
-            renderToolResponse(resultDiv, response);
+            const responseRef = await addDoc(collection(db, `tools/${toolName}/responses`), {
+                prompt: input, response, createdAt: serverTimestamp(), userId: auth.currentUser.uid
+            });
+            renderToolResponse(resultDiv, input, response, responseRef.id);
         }
 
         async function getToolResponse(instruction) {
@@ -631,10 +660,7 @@
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: "OBJECT",
-                        properties: {
-                            "personaIntro": { "type": "STRING" },
-                            "mainAnswer": { "type": "STRING" }
-                        },
+                        properties: { "personaIntro": { "type": "STRING" }, "mainAnswer": { "type": "STRING" } },
                         required: ["personaIntro", "mainAnswer"]
                     }
                 }
@@ -649,49 +675,186 @@
             }
         }
 
-        function renderToolResponse(container, response) {
+        function renderToolResponse(container, prompt, response, responseId) {
             const formattedAnswer = response.mainAnswer.replace(/\*\*(.*?)\*\*/g, '<strong class="text-[color:var(--accent-color)]">$1</strong>');
             container.innerHTML = `
                 <p class="text-slate-400 italic mb-4">${response.personaIntro}</p>
                 <div class="border-t border-slate-700/50 pt-4 text-xl sm:text-2xl font-bold">${formattedAnswer}</div>
+                <div class="mt-6 flex items-center justify-center gap-6 border-t border-slate-700/50 pt-4">
+                    <button class="reaction-btn text-2xl" data-response-id="${responseId}" data-reaction="funny">😂</button>
+                    <button class="reaction-btn text-2xl" data-response-id="${responseId}" data-reaction="love">❤️</button>
+                    <button class="reaction-btn text-2xl" data-response-id="${responseId}" data-reaction="think">🤔</button>
+                    <button class="action-icon download-tool-btn" title="تحميل الصورة" data-prompt="${prompt}" data-response="${response.mainAnswer}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    </button>
+                </div>
             `;
         }
 
+        async function handleReaction(responseId, reactionType) {
+            if (!responseId) return;
+            const feedbackRef = doc(db, `tool_feedback`, `${responseId}_${auth.currentUser.uid}`);
+            const data = {
+                responseId, userId: auth.currentUser.uid, tool: currentView,
+                timestamp: serverTimestamp(), reaction: reactionType
+            };
+            try {
+                await setDoc(feedbackRef, data, { merge: true });
+                const btnContainer = document.querySelector(`button[data-response-id="${responseId}"]`).parentElement;
+                if(btnContainer) {
+                    btnContainer.querySelectorAll('.reaction-btn').forEach(btn => {
+                        btn.classList.remove('selected');
+                        if(btn.dataset.reaction === reactionType) btn.classList.add('selected');
+                    });
+                }
+            } catch (error) { console.error("Error handling reaction:", error); }
+        }
+
         // --- Event Listeners & Initializers ---
-        chatForm.addEventListener('submit', handleSubmit);
-        newChatBtn.addEventListener('click', () => {
+        ALL_DOM_ELEMENTS.chatForm.addEventListener('submit', handleSubmit);
+        ALL_DOM_ELEMENTS.newChatBtn.addEventListener('click', () => {
             switchView('chat');
             createNewChat();
         });
-        sidebarToggleBtn.addEventListener('click', () => {
+        ALL_DOM_ELEMENTS.sidebarToggleBtn.addEventListener('click', () => {
             if (window.innerWidth < 768) {
-                sidebar.classList.toggle('open');
-                sidebarOverlay.classList.toggle('hidden');
+                ALL_DOM_ELEMENTS.sidebar.classList.toggle('open');
+                ALL_DOM_ELEMENTS.sidebarOverlay.classList.toggle('hidden');
             } else {
-                sidebar.classList.toggle('collapsed');
-                mainContent.classList.toggle('md:mr-[-288px]');
+                ALL_DOM_ELEMENTS.sidebar.classList.toggle('collapsed');
+                ALL_DOM_ELEMENTS.mainContent.classList.toggle('md:mr-[-288px]');
             }
         });
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            sidebarOverlay.classList.add('hidden');
+        ALL_DOM_ELEMENTS.sidebarOverlay.addEventListener('click', () => {
+            ALL_DOM_ELEMENTS.sidebar.classList.remove('open');
+            ALL_DOM_ELEMENTS.sidebarOverlay.classList.add('hidden');
         });
-        openToolsModalBtn.addEventListener('click', () => {
+        ALL_DOM_ELEMENTS.openToolsModalBtn.addEventListener('click', () => {
             renderToolsGrid();
-            toolsModal.classList.remove('hidden');
+            ALL_DOM_ELEMENTS.toolsModal.classList.remove('hidden');
         });
-        closeToolsModalBtn.addEventListener('click', () => toolsModal.classList.add('hidden'));
-        closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
+        ALL_DOM_ELEMENTS.closeToolsModalBtn.addEventListener('click', () => ALL_DOM_ELEMENTS.toolsModal.classList.add('hidden'));
+        ALL_DOM_ELEMENTS.closeShareModalBtn.addEventListener('click', () => ALL_DOM_ELEMENTS.shareModal.classList.add('hidden'));
         
         function showConfirmationModal(message, onConfirm) {
             document.getElementById('confirmation-message').textContent = message;
-            confirmationModal.classList.remove('hidden');
-            confirmBtn.onclick = () => {
+            ALL_DOM_ELEMENTS.confirmationModal.classList.remove('hidden');
+            ALL_DOM_ELEMENTS.confirmBtn.onclick = () => {
                 onConfirm();
-                confirmationModal.classList.add('hidden');
+                ALL_DOM_ELEMENTS.confirmationModal.classList.add('hidden');
             };
-            cancelBtn.onclick = () => confirmationModal.classList.add('hidden');
+            ALL_DOM_ELEMENTS.cancelBtn.onclick = () => ALL_DOM_ELEMENTS.confirmationModal.classList.add('hidden');
         }
+
+        // --- All other functions from old code ---
+        function triggerConfetti() {
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                ALL_DOM_ELEMENTS.confettiContainer.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+
+        async function playAudio(text) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
+            const payload = { contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Rasalgethi" } } } }, model: "gemini-2.5-flash-preview-tts" };
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                const audioData = result.candidates[0].content.parts[0].inlineData.data;
+                const pcmData = Uint8Array.from(atob(audioData), c => c.charCodeAt(0)).buffer;
+                const pcm16 = new Int16Array(pcmData);
+                const wavBlob = pcmToWav(pcm16, parseInt(result.candidates[0].content.parts[0].inlineData.mimeType.match(/rate=(\d+)/)[1], 10));
+                new Audio(URL.createObjectURL(wavBlob)).play();
+            } catch (error) { console.error("TTS Error:", error); }
+        }
+        
+        function pcmToWav(pcmData, sampleRate) {
+            const view = new DataView(new ArrayBuffer(44 + pcmData.length * 2));
+            function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
+            writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcmData.length * 2, true); writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+            writeString(view, 36, 'data'); view.setUint32(40, pcmData.length * 2, true);
+            for (let i = 0; i < pcmData.length; i++) view.setInt16(44 + i * 2, pcmData[i], true);
+            return new Blob([view], { type: 'audio/wav' });
+        }
+        
+        async function generateShareCard(botMessageId) {
+            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
+            const botMsgSnap = await getDoc(botMsgRef);
+            if (!botMsgSnap.exists()) return;
+            const botText = botMsgSnap.data().text;
+            const q = query(collection(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages`), orderBy("timestamp", "desc"));
+            const snapshot = await getDocs(q);
+            let userText = "سؤال...";
+            let found = false;
+            for (const doc of snapshot.docs) {
+                if (doc.id === botMessageId) found = true;
+                if (found && doc.data().sender === 'user') { userText = doc.data().text; break; }
+            }
+            drawShareCard(`أنت سألت: "${userText}"`, `تويست أجاب: "${botText}"`);
+        }
+
+        function generateToolShareCard(prompt, response) {
+            drawShareCard(`أنت طلبت: "${prompt}"`, `تويست قرر: "${response}"`);
+        }
+
+        function drawShareCard(line1, line2) {
+            const ctx = ALL_DOM_ELEMENTS.shareCanvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 1000, 1000);
+            gradient.addColorStop(0, getComputedStyle(document.body).getPropertyValue('--bg-gradient-start'));
+            gradient.addColorStop(1, getComputedStyle(document.body).getPropertyValue('--bg-gradient-end'));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1000, 1000);
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#cbd5e1'; ctx.font = 'bold 50px Cairo';
+            wrapText(ctx, line1, 500, 250, 900, 60);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent-color'); ctx.font = 'bold 70px Cairo';
+            wrapText(ctx, line2, 500, 500, 900, 80);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '40px Cairo';
+            ctx.fillText('asstwist.web.app', 500, 900);
+            ALL_DOM_ELEMENTS.downloadBtn.href = ALL_DOM_ELEMENTS.shareCanvas.toDataURL('image/png');
+            ALL_DOM_ELEMENTS.shareModal.classList.remove('hidden');
+        }
+        
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' '); let line = '';
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                if (context.measureText(testLine).width > maxWidth && n > 0) {
+                    context.fillText(line, x, y); line = words[n] + ' '; y += lineHeight;
+                } else { line = testLine; }
+            }
+            context.fillText(line, x, y);
+        }
+
+        async function amplifyResponse(botMessageId) {
+            const botMsgRef = doc(db, `users/${auth.currentUser.uid}/chats/${currentChatId}/messages/${botMessageId}`);
+            const botMsgSnap = await getDoc(botMsgRef);
+            if (!botMsgSnap.exists()) return;
+            const botText = botMsgSnap.data().text;
+            
+            document.getElementById('chat-messages').innerHTML += `<div id="loading-indicator" class="flex items-start gap-3 pop-in"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-fuchsia-600 flex items-center justify-center font-bold text-lg flex-shrink-0 animate-pulse">T</div><div class="bg-slate-700/80 glass-pane p-4 rounded-xl"><div class="flex items-center space-x-2 space-x-reverse"><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span><span class="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span></div></div></div>`;
+            scrollToBottom();
+            const amplifyPrompt = `أنا رديت على المستخدم بالرد ده: "${botText}". دلوقتي محتاج أزوّدها وأرد رد أقوى وأكثر سخرية وقصف جبهة. فاجئني برد يخليه يراجع نفسه.`;
+            const amplifiedResponse = await getGeminiResponse(amplifyPrompt, [{ role: 'user', parts: [{ text: amplifyPrompt }] }]);
+            document.getElementById('loading-indicator')?.remove();
+            await saveMessage(amplifiedResponse, 'bot');
+            amplifySynth.triggerAttackRelease("C4", "8n");
+        }
+
+        ALL_DOM_ELEMENTS.chatMessages.addEventListener('click', async (e) => {
+            const playBtn = e.target.closest('.play-audio-btn'), shareBtn = e.target.closest('.share-card-btn'), amplifyBtn = e.target.closest('.amplify-btn');
+            if (playBtn) { playBtn.disabled = true; await playAudio(playBtn.dataset.text); playBtn.disabled = false; }
+            if (shareBtn) await generateShareCard(shareBtn.dataset.messageId);
+            if (amplifyBtn) { amplifyBtn.disabled = true; await amplifyResponse(amplifyBtn.dataset.messageId); amplifyBtn.disabled = false; }
+        });
+
     </script>
 </body>
 </html>
