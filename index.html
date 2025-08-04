@@ -1,17 +1,631 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
-    <title>Redirecting...</title>
-    <script>
-      // Redirect immediately using JS
-      window.location.replace("https://ask-twist.web.app/");
-    </script>
+    <title>About | Twist AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="shortcut icon" href="./fav.svg" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary-color: #0164ff;
+        --primary-color-rgb: 1, 100, 255;
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background-color: #020617; /* slate-950 */
+        overflow-x: hidden; /* Prevent horizontal scrollbar */
+      }
+
+      /* Animated Aurora Background */
+      .animated-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-image: radial-gradient(
+            at 88% 7%,
+            hsla(215, 98%, 61%, 0.15) 0px,
+            transparent 50%
+          ),
+          radial-gradient(
+            at 6% 92%,
+            hsla(240, 96%, 68%, 0.15) 0px,
+            transparent 50%
+          ),
+          radial-gradient(
+            at 50% 50%,
+            rgba(var(--primary-color-rgb), 0.1) 0px,
+            transparent 50%
+          ),
+          radial-gradient(
+            at 97% 96%,
+            hsla(38, 60%, 74%, 0.1) 0px,
+            transparent 50%
+          ),
+          radial-gradient(
+            at 33% 50%,
+            hsla(222, 67%, 73%, 0.1) 0px,
+            transparent 50%
+          ),
+          radial-gradient(
+            at 79% 53%,
+            hsla(343, 68%, 79%, 0.1) 0px,
+            transparent 50%
+          );
+        animation: move-aurora 20s linear infinite;
+      }
+
+      @keyframes move-aurora {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      /* Glassmorphism Card Style */
+      .glass-card {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(51, 65, 85, 0.5);
+        transition: all 0.3s ease;
+      }
+
+      .interactive-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(var(--primary-color-rgb), 0.5);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2),
+          0 0 20px rgba(var(--primary-color-rgb), 0.2);
+      }
+
+      /* Custom table styling */
+      .custom-table th,
+      .custom-table td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      }
+      .custom-table th {
+        text-align: left;
+        font-weight: 600;
+        color: #94a3b8;
+      }
+      .custom-table tbody tr {
+        transition: background-color 0.2s ease-in-out;
+      }
+      .custom-table tbody tr:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.08);
+      }
+      .custom-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Custom Primary Color Application */
+      .primary-text {
+        color: var(--primary-color);
+      }
+      .primary-bg {
+        background-color: var(--primary-color);
+      }
+      .primary-shadow {
+        box-shadow: 0 4px 20px 0 rgba(var(--primary-color-rgb), 0.35);
+      }
+      .hover-primary-text:hover {
+        color: var(--primary-color);
+      }
+
+      /* Header Shine Animation */
+      .animated-shine {
+        position: relative;
+        overflow: hidden;
+      }
+      .animated-shine::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.2) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        animation: shine 5s ease-in-out infinite;
+      }
+      @keyframes shine {
+        0% {
+          transform: translateX(-75%) translateY(-25%) rotate(20deg);
+        }
+        100% {
+          transform: translateX(75%) translateY(25%) rotate(20deg);
+        }
+      }
+
+      /* Scroll Reveal Animation */
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.8s ease-out, transform 0.6s ease-out;
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    </style>
   </head>
-  <body>
-    <!-- This won't be shown unless JS is disabled or fails -->
-    <noscript>
-      <p>JavaScript is required. <a href="https://ask-twist.web.app/">Click here</a> if you’re not redirected.</p>
-    </noscript>
+  <body class="text-slate-200 antialiased">
+    <div class="animated-bg"></div>
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <!-- Header Section -->
+      <header class="text-center py-12 md:py-16 space-y-6 reveal">
+        <h1
+          class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-[#0164FF] animated-shine"
+        >
+          <img
+            src="./logo.svg"
+            alt="Twist AI Logo"
+            class="w-[300px] p-4 mx-auto"
+          />
+        </h1>
+        <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">
+          Your sassy AI sidekick with attitude. An Arabic AI chatbot powered by
+          Google Gemini, packed with sarcasm, creativity, and Egyptian humor.
+        </p>
+        <a
+          href="https://ask-twist.web.app"
+          target="_blank"
+          class="inline-block primary-bg text-white font-bold py-3 px-8 rounded-full primary-shadow hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
+        >
+          Try It Now
+        </a>
+      </header>
+
+      <main class="space-y-8 md:space-y-12">
+        <!-- How It Works Section -->
+        <section
+          id="how-it-works"
+          class="glass-card rounded-2xl p-6 md:p-8 reveal"
+        >
+          <h2
+            class="text-3xl font-bold mb-6 text-white flex items-center gap-3"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="primary-text"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            How It Works
+          </h2>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-slate-800/50 p-5 rounded-lg border border-slate-700">
+              <h3 class="font-semibold text-blue-300 flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                  <path d="M12 20h4" />
+                  <path d="M12 4H8" />
+                  <path d="M12 12h4" />
+                  <path d="M12 8H8" />
+                </svg>
+                Sarcastic Personality
+              </h3>
+              <p class="text-sm text-slate-400 mt-1">
+                Twist is engineered with a unique personality that mimics
+                Egyptian humor. It's witty, sometimes chaotic, and always
+                entertaining.
+              </p>
+            </div>
+            <div class="bg-slate-800/50 p-5 rounded-lg border border-slate-700">
+              <h3 class="font-semibold text-blue-300 flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3.5 21 14 10.5 21 21" />
+                  <path d="M21 3.5 10.5 14 3.5 3.5" />
+                </svg>
+                Personalized Memory
+              </h3>
+              <p class="text-sm text-slate-400 mt-1">
+                Using Firebase, the AI remembers your name and past
+                interactions, creating sarcastic "notes" to personalize your
+                chat experience.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Built-in AI Tools Section -->
+        <section
+          id="tools"
+          class="glass-card rounded-2xl overflow-hidden reveal"
+        >
+          <div class="p-6 md:p-8">
+            <h2
+              class="text-3xl font-bold mb-6 text-white flex items-center gap-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="primary-text"
+              >
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z" />
+                <path d="m15.6 15.6-2.4-2.4a2 2 0 1 0-2.8-2.8l-2.4-2.4" />
+                <path d="m14.2 14.2 1.4 1.4" />
+                <path d="M12 6.8 10.6 5.4" />
+                <path d="m6.8 12 1.4-1.4" />
+                <path d="m5.4 10.6-1.4-1.4" />
+                <path d="m17.2 12-1.4 1.4" />
+                <path d="m18.6 13.4 1.4 1.4" />
+              </svg>
+              Built-in AI Tools
+            </h2>
+            <p class="text-slate-400 mb-6">
+              All tools use dedicated UIs and custom Gemini prompts for
+              hilarious results.
+            </p>
+          </div>
+          <div class="w-full overflow-x-auto">
+            <table class="w-full min-w-[600px] custom-table">
+              <thead>
+                <tr>
+                  <th>Tool Name</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>🌙 <strong>Dream Interpreter</strong></td>
+                  <td>Enter your dream and get a ridiculous interpretation.</td>
+                </tr>
+                <tr>
+                  <td>🏃 <strong>Excuse Generator</strong></td>
+                  <td>
+                    Need a reason to be late? Twist creates absurd excuses.
+                  </td>
+                </tr>
+                <tr>
+                  <td>🤔 <strong>Decision Maker</strong></td>
+                  <td>Can’t choose? Twist will decide for you (his way).</td>
+                </tr>
+                <tr>
+                  <td>📜 <strong>AI Poet</strong></td>
+                  <td>
+                    Request a short poem. Expect satire or nonsense rhymes.
+                  </td>
+                </tr>
+                <tr>
+                  <td>😏 <strong>Compliment Generator</strong></td>
+                  <td>
+                    Passive-aggressive praise that sounds nice... but isn’t.
+                  </td>
+                </tr>
+                <tr>
+                  <td>✨ <strong>Horoscope</strong></td>
+                  <td>
+                    Get your fake fortune-teller reading based on your star
+                    sign.
+                  </td>
+                </tr>
+                <tr>
+                  <td>🔥 <strong>Roast Machine</strong></td>
+                  <td>
+                    Type anything (yourself, a friend, an exam) and get roasted.
+                  </td>
+                </tr>
+                <tr>
+                  <td>🎵 <strong>Song Meaning Explainer</strong></td>
+                  <td>Paste lyrics — Twist will “explain” what they mean.</td>
+                </tr>
+                <tr>
+                  <td>🍳 <strong>Recipe Generator</strong></td>
+                  <td>
+                    Tell Twist an ingredient, and he'll invent a wild dish.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- UI & Engagement Section -->
+        <div class="grid lg:grid-cols-2 gap-8 md:gap-12">
+          <!-- Themes & UI -->
+          <section
+            id="ui-themes"
+            class="glass-card rounded-2xl p-6 md:p-8 reveal"
+          >
+            <h2
+              class="text-2xl font-bold mb-4 text-white flex items-center gap-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="primary-text"
+              >
+                <path
+                  d="M12 2.69l.34.26a1.5 1.5 0 0 0 1.32 0L16 2l-2.24.9a1.5 1.5 0 0 1-1.52 0L10 2l2.24.9a1.5 1.5 0 0 0 1.52 0Z"
+                />
+                <path
+                  d="m22 12-2.24-.9a1.5 1.5 0 0 0-1.52 0L16 12l2.24-.9a1.5 1.5 0 0 1 1.52 0Z"
+                />
+                <path
+                  d="M10 22l-2.24-.9a1.5 1.5 0 0 1-1.52 0L4 22l2.24-.9a1.5 1.5 0 0 0 1.52 0Z"
+                />
+                <path
+                  d="m22 2-2.24.9a1.5 1.5 0 0 0-1.52 0L16 2l2.24.9a1.5 1.5 0 0 1 1.52 0Z"
+                />
+                <path
+                  d="m10 12-2.24.9a1.5 1.5 0 0 1-1.52 0L4 12l2.24.9a1.5 1.5 0 0 0 1.52 0Z"
+                />
+                <path
+                  d="M16 22l2.24-.9a1.5 1.5 0 0 0 1.52 0L22 22l-2.24-.9a1.5 1.5 0 0 1-1.52 0Z"
+                />
+                <path
+                  d="M4 2l-2.24.9a1.5 1.5 0 0 0-1.52 0L-2 2l2.24.9a1.5 1.5 0 0 1 1.52 0Z"
+                />
+              </svg>
+              Themes & UI
+            </h2>
+            <p class="text-slate-400 mb-4 text-sm">
+              Switch between multiple themes to customize your experience. The
+              UI is fully responsive and supports RTL for Arabic.
+            </p>
+            <div class="grid grid-cols-3 gap-3">
+              <div
+                class="rounded-lg p-2 text-center bg-blue-900/50 border border-blue-700"
+              >
+                <span class="text-xs font-semibold text-blue-200">Default</span>
+              </div>
+              <div
+                class="rounded-lg p-2 text-center bg-purple-900/50 border border-purple-700"
+              >
+                <span class="text-xs font-semibold text-purple-200"
+                  >Cosmic</span
+                >
+              </div>
+              <div
+                class="rounded-lg p-2 text-center bg-green-900/50 border border-green-700"
+              >
+                <span class="text-xs font-semibold text-green-200">Forest</span>
+              </div>
+            </div>
+          </section>
+          <!-- Engagement & Feedback -->
+          <section
+            id="engagement"
+            class="glass-card rounded-2xl p-6 md:p-8 reveal"
+          >
+            <h2
+              class="text-2xl font-bold mb-4 text-white flex items-center gap-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="primary-text"
+              >
+                <path d="M7 10v12" />
+                <path
+                  d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a2 2 0 0 1 1.79 1.11L15 5.88Z"
+                />
+              </svg>
+              Engagement & Feedback
+            </h2>
+            <p class="text-slate-400 mb-4 text-sm">
+              React to any AI reply with emojis, and download shareable image
+              cards of your favorite interactions to post online.
+            </p>
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">😂</span>
+              <span class="text-2xl">❤️</span>
+              <span class="text-2xl">🤔</span>
+              <span class="ml-auto text-sm font-semibold text-slate-400"
+                >...and more!</span
+              >
+            </div>
+          </section>
+        </div>
+
+        <!-- Tech Stack & Code Access -->
+        <div class="grid md:grid-cols-2 gap-8 md:gap-12">
+          <section
+            id="tech"
+            class="glass-card rounded-2xl p-6 md:p-8 interactive-card reveal"
+          >
+            <h2
+              class="text-2xl font-bold mb-4 text-white flex items-center gap-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="primary-text"
+              >
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" /></svg
+              >Tech Stack
+            </h2>
+            <ul class="space-y-2 text-slate-300 text-sm sm:text-base">
+              <li><strong>Frontend:</strong> HTML, Tailwind CSS, Vanilla JS</li>
+              <li><strong>Backend:</strong> Firebase Firestore</li>
+              <li><strong>Auth:</strong> Firebase Auth (Google Sign-in)</li>
+              <li><strong>AI:</strong> Google Gemini 2.5 Flash</li>
+              <li><strong>Audio:</strong> Tone.js</li>
+              <li><strong>Canvas:</strong> HTML Canvas API for image cards</li>
+            </ul>
+          </section>
+          <section
+            id="code"
+            class="glass-card rounded-2xl p-6 md:p-8 interactive-card reveal"
+          >
+            <h2
+              class="text-2xl font-bold mb-4 text-white flex items-center gap-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="primary-text"
+              >
+                <path
+                  d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"
+                />
+                <path d="M9 18c-4.51 2-5-2-7-2" /></svg
+              >Code Access
+            </h2>
+            <p class="text-slate-400 mb-4 text-sm sm:text-base">
+              The source code is not public. For collaboration, licensing, or
+              commercial use, please contact the developer.
+            </p>
+          </section>
+        </div>
+      </main>
+
+      <!-- Footer Section -->
+      <footer
+        class="mt-16 pt-8 border-t border-slate-800 text-center text-slate-500 reveal"
+      >
+        <div class="mb-6">
+          <h3 class="text-xl font-semibold text-slate-300">
+            Developed by Ahmed Anter
+          </h3>
+          <p class="text-slate-400">
+            Frontend Engineer | React Developer | Based in Egypt
+          </p>
+          <div class="flex justify-center items-center gap-4 mt-3">
+            <a
+              href="https://www.linkedin.com/in/ahmedahmedanter/"
+              target="_blank"
+              class="hover-primary-text transition-colors"
+              >LinkedIn</a
+            >
+            <span>&bull;</span>
+            <a
+              href="https://github.com/AhmedAhmedAnter"
+              target="_blank"
+              class="hover-primary-text transition-colors"
+              >GitHub</a
+            >
+            <span>&bull;</span>
+            <a
+              href="mailto:ahmedahmedanter0@gmail.com"
+              class="hover-primary-text transition-colors"
+              >Email</a
+            >
+          </div>
+        </div>
+
+        <div class="max-w-md mx-auto text-xs text-slate-600">
+          <p>
+            <strong>Disclaimer:</strong> Twist AI is intended for entertainment
+            purposes only. Responses may be sarcastic or exaggerated. Please use
+            with a sense of humor. 😄
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      // JavaScript for Scroll Reveal Animation
+      document.addEventListener("DOMContentLoaded", function () {
+        const revealElements = document.querySelectorAll(".reveal");
+        if (window.innerWidth < 768) {
+          // On small screens, reveal all at once to avoid layout jumps
+          revealElements.forEach(el => el.classList.add("visible"));
+          return;
+        }
+        const observer = new IntersectionObserver(
+          entries => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("visible");
+              }
+            });
+          },
+          {
+            threshold: 0.1,
+          }
+        );
+        revealElements.forEach(el => {
+          observer.observe(el);
+        });
+      });
+    </script>
   </body>
 </html>
