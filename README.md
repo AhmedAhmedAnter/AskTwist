@@ -54,17 +54,18 @@ Twist AI is a conversational chatbot in Arabic that interacts with users in an u
 
 All tools work with dedicated UIs and call Gemini with custom system prompts.
 
-| Tool Name           | Description |
-|---------------------|-------------|
-| **Dream Interpreter** 🌙 | Enter your dream and get a ridiculous interpretation |
-| **Excuse Generator** 🏃 | Need a reason to be late or skip something? Twist creates absurd excuses |
-| **Decision Maker** 🤔 | Can’t choose between two options? Twist will decide for you (his way) |
-| **AI Poet** 📜 | Request a short poem on any topic. Expect satire or nonsense rhymes |
-| **Compliment Generator** 😏 | Passive-aggressive compliments that sound nice... but aren’t really |
-| **Horoscope** ✨ | Get your fake fortune-teller reading based on your star sign |
-| **Roast Machine** 🔥 | Type anything (yourself, friend, exam, etc.) and get roasted |
-| **Song Meaning Explainer** 🎵 | Paste lyrics — Twist will “explain” what it means (with sarcasm) |
-| **Recipe Generator** 🍳 | Tell Twist what ingredient you have, and he'll invent a wild dish |
+| Tool Name                        | Description |
+|----------------------------------|-------------|
+| 🌙 **Dream Interpreter**         | Enter your dream and get a ridiculous interpretation |
+| 🏃 **Excuse Generator**          | Need a reason to be late or skip something? Twist creates absurd excuses |
+| 🤔 **Decision Maker**            | Can’t choose between two options? Twist will decide for you (his way) |
+| 📜 **AI Poet**                   | Request a short poem on any topic. Expect satire or nonsense rhymes |
+| 😏 **Compliment Generator**      | Passive-aggressive compliments that sound nice... but aren’t really |
+| ✨ **Horoscope**                 | Get your fake fortune-teller reading based on your star sign |
+| 🔥 **Roast Machine**             | Type anything (yourself, friend, exam, etc.) and get roasted |
+| 🎵 **Song Meaning Explainer**    | Paste lyrics — Twist will “explain” what it means (with sarcasm) |
+| 🍳 **Recipe Generator**          | Tell Twist what ingredient you have, and he'll invent a wild dish |
+
 
 ---
 
